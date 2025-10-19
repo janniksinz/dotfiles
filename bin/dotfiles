@@ -88,7 +88,13 @@ OP_AUTHENTICATED=false
 OP_VAULT_SECRET=""
 ID=""
 DOTFILES_LOG="$HOME/.dotfiles.log"
-DOTFILES_DIR="$HOME/.dotfiles"
+#DOTFILES_DIR="$HOME/.dotfiles"
+# Use the original user's home directory even when run with sudo
+if [[ -n "$SUDO_USER" ]]; then
+  DOTFILES_DIR=$(eval echo ~$SUDO_USER)/.dotfiles
+else
+  DOTFILES_DIR="$HOME/.dotfiles"
+fi
 IS_FIRST_RUN="$HOME/.dotfiles_run"
 # Spinner PID tracking
 SPINNER_PID=""
@@ -271,17 +277,66 @@ update_ansible_galaxy() {
 
 function confirmVaultAccess() {
   __task "Checking for 1Password CLI"
+  
   if ! command -v op >/dev/null 2>&1; then
     printf "${OVERWRITE}${CAT_RED} [X]  ${CAT_TEXT}Checking for 1Password CLI\n"
     printf " ${WARNING}${CAT_MAROON}   1Password CLI is not installed.${NC}\n"
+    printf " ${CAT_YELLOW}   Install with: brew install 1password-cli${NC}\n"
     exit 1
   fi
+  
   local op_version
   op_version=$(op --version)
+  _task_done
+  
   __task "1Password CLI found: [$op_version] -- Authenticating..."
-  if ! _cmd "op --account my.ent.1password.com vault list"; then exit 1; fi
-  _task_done && printf "${CAT_GREEN} [✓] ${CAT_TEXT}Successfully authenticated with 1Password CLI! ☕\n"
-  return
+  
+  # If running as root/sudo, try to get token from original user's profile
+  if [[ $EUID -eq 0 ]] && [[ -n "$SUDO_USER" ]]; then
+    if [[ -z "$OP_SERVICE_ACCOUNT_TOKEN" ]]; then
+      # Get the original user's home directory
+      local orig_user_home=$(eval echo ~$SUDO_USER)
+      
+      # Try to source from original user's profile
+      if [[ -f "$orig_user_home/.profile" ]]; then
+        source "$orig_user_home/.profile" 2>/dev/null
+      elif [[ -f "$orig_user_home/.zshrc" ]]; then
+        source "$orig_user_home/.zshrc" 2>/dev/null
+      elif [[ -f "$orig_user_home/.bash_profile" ]]; then
+        source "$orig_user_home/.bash_profile" 2>/dev/null
+      fi
+    fi
+  fi
+  
+  # Check if service account token is now set
+  if [[ -n "$OP_SERVICE_ACCOUNT_TOKEN" ]]; then
+    # Export it to ensure it's available to child processes (like ansible)
+    export OP_SERVICE_ACCOUNT_TOKEN
+    
+    # Verify the service account token works
+    if op vault list >/dev/null 2>&1; then
+      _task_done
+      printf "${CAT_GREEN} [✓] ${CAT_TEXT}Successfully authenticated with 1Password service account! ☕\n"
+      return 0
+    else
+      printf "${OVERWRITE}${CAT_RED} [✗]  ${CAT_TEXT}1Password service account authentication failed\n"
+      printf " ${CAT_MAROON}   The OP_SERVICE_ACCOUNT_TOKEN appears to be invalid or expired.${NC}\n"
+      exit 1
+    fi
+  fi
+  
+  # Service account token not found
+  printf "${OVERWRITE}${CAT_YELLOW} [!]  ${CAT_TEXT}OP_SERVICE_ACCOUNT_TOKEN not found\n\n"
+  printf "${CAT_TEXT}To fix this, add the following to ${CAT_LAVENDER}/etc/sudoers.d/op-env${CAT_TEXT}:\n\n"
+  printf "   ${CAT_LAVENDER}Defaults env_keep += \"OP_SERVICE_ACCOUNT_TOKEN\"${NC}\n\n"
+  printf "${CAT_TEXT}To create this file safely:\n\n"
+  printf "   ${CAT_LAVENDER}echo 'Defaults env_keep += \"OP_SERVICE_ACCOUNT_TOKEN\"' | sudo tee /etc/sudoers.d/op-env${NC}\n\n"
+  printf "${CAT_TEXT}Then ensure your token is exported in ${CAT_LAVENDER}~/.profile${CAT_TEXT}:\n\n"
+  printf "   ${CAT_LAVENDER}export OP_SERVICE_ACCOUNT_TOKEN='ops_your_token_here'${NC}\n\n"
+  printf "${CAT_TEXT}After that, source your profile and run:\n\n"
+  printf "   ${CAT_LAVENDER}source ~/.profile && sudo .dotfiles/bin/dotfiles${NC}\n\n"
+  
+  exit 1
 }
 
 detect_os() {
@@ -470,7 +525,8 @@ confirmVaultAccess
 
 rm -f $VAULT_SECRET_FILE
 _task_done
-ansible-playbook "$DOTFILES_DIR/main.yml" "${REMAINING_ARGS[@]}"
+echo "Running 'ansible-playbook $DOTFILES_DIR/main'"
+ansible-playbook "$DOTFILES_DIR/main.yml" --flush-cache "${REMAINING_ARGS[@]}" 
 
 popd 2>&1 > /dev/null
 
