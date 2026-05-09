@@ -380,7 +380,7 @@ fi
 
 if ! [[ -d "$DOTFILES_DIR" ]]; then
   __task "Downloading dotfiles repository (This may take a minute)"
-  _cmd "$GIT_CMD clone --quiet https://github.com/janniksinz/dotfiles.git $DOTFILES_DIR"
+  _cmd "$GIT_CMD clone --quiet https://github.com/janniksinz/dotfiles.git --branch pilot-config $DOTFILES_DIR"
   _task_done
 else
   __task "Updating dotfiles repository"
