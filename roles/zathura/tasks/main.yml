@@ -1,0 +1,44 @@
+---
+- name: Install zathura with PDF support
+  become: true
+  community.general.pacman:
+    name:
+      - zathura
+      - zathura-pdf-mupdf
+    state: present
+
+- name: Ensure zathura config directory exists
+  ansible.builtin.file:
+    path: "{{ user_home }}/.config/zathura"
+    state: directory
+    mode: "0755"
+
+- name: Deploy zathura config with Catppuccin Mocha
+  ansible.builtin.copy:
+    content: |
+      # Catppuccin Mocha
+      set default-bg "#1E1E2E"
+      set default-fg "#CDD6F4"
+      set statusbar-bg "#181825"
+      set statusbar-fg "#CDD6F4"
+      set inputbar-bg "#313244"
+      set inputbar-fg "#CDD6F4"
+      set notification-bg "#313244"
+      set notification-fg "#CDD6F4"
+      set notification-error-bg "#F38BA8"
+      set notification-error-fg "#1E1E2E"
+      set notification-warning-bg "#FAB387"
+      set notification-warning-fg "#1E1E2E"
+      set highlight-color "#F9E2AF"
+      set highlight-active-color "#89B4FA"
+      set completion-bg "#313244"
+      set completion-fg "#CDD6F4"
+      set completion-highlight-bg "#45475A"
+      set completion-highlight-fg "#CDD6F4"
+      set recolor-lightcolor "#1E1E2E"
+      set recolor-darkcolor "#CDD6F4"
+
+      set recolor true
+      set selection-clipboard clipboard
+    dest: "{{ user_home }}/.config/zathura/zathurarc"
+    mode: "0644"

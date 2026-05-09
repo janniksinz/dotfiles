@@ -1,0 +1,114 @@
+---
+- name: Validate System State
+  hosts: localhost
+  connection: local
+
+  tasks:
+    - name: Check nvidia modules loaded
+      ansible.builtin.command:
+        cmd: lsmod
+      register: lsmod_output
+      changed_when: false
+
+    - name: Verify nvidia modules present
+      ansible.builtin.assert:
+        that:
+          - "'nvidia' in lsmod_output.stdout"
+          - "'nvidia_modeset' in lsmod_output.stdout"
+          - "'nvidia_uvm' in lsmod_output.stdout"
+          - "'nvidia_drm' in lsmod_output.stdout"
+        fail_msg: "Nvidia modules not fully loaded"
+
+    - name: Check NVreg_PreserveVideoMemoryAllocations
+      ansible.builtin.command:
+        cmd: cat /sys/module/nvidia/parameters/NVreg_PreserveVideoMemoryAllocations
+      register: nvram_preserve
+      changed_when: false
+      failed_when: false
+
+    - name: Verify VRAM preservation enabled
+      ansible.builtin.assert:
+        that: "'1' in nvram_preserve.stdout or 'Y' in nvram_preserve.stdout"
+        fail_msg: "NVreg_PreserveVideoMemoryAllocations is not enabled"
+      when: nvram_preserve.rc == 0
+
+    - name: Check nvidia services enabled
+      ansible.builtin.command:
+        cmd: "systemctl is-enabled {{ item }}"
+      loop:
+        - nvidia-suspend.service
+        - nvidia-hibernate.service
+        - nvidia-resume.service
+        - nvidia-persistenced.service
+      register: nvidia_services
+      changed_when: false
+      failed_when: nvidia_services.stdout != "enabled"
+
+    - name: Check critical system services
+      ansible.builtin.command:
+        cmd: "systemctl is-active {{ item }}"
+      loop:
+        - sddm.service
+        - NetworkManager.service
+        - docker.service
+      register: system_services
+      changed_when: false
+      failed_when: system_services.stdout != "active"
+
+    - name: Check bluetooth service
+      ansible.builtin.command:
+        cmd: systemctl is-active bluetooth.service
+      register: bluetooth_check
+      changed_when: false
+      failed_when: false
+
+    - name: Check audio (pipewire)
+      ansible.builtin.command:
+        cmd: systemctl --user is-active pipewire.service
+      register: pipewire_check
+      changed_when: false
+      failed_when: pipewire_check.stdout != "active"
+
+    - name: Check for failed systemd services
+      ansible.builtin.command:
+        cmd: systemctl --failed --no-legend
+      register: failed_services
+      changed_when: false
+
+    - name: Report failed services
+      ansible.builtin.debug:
+        msg: "WARNING: Failed services detected: {{ failed_services.stdout_lines }}"
+      when: failed_services.stdout_lines | length > 0
+
+    - name: Check mkinitcpio has nvidia modules
+      ansible.builtin.command:
+        cmd: grep -q "nvidia nvidia_modeset nvidia_uvm nvidia_drm" /etc/mkinitcpio.conf
+      register: mkinitcpio_check
+      changed_when: false
+      failed_when: mkinitcpio_check.rc != 0
+
+    - name: Check swap is active
+      ansible.builtin.command:
+        cmd: swapon --show --noheadings
+      register: swap_check
+      changed_when: false
+
+    - name: Verify swap exists
+      ansible.builtin.assert:
+        that: swap_check.stdout | length > 0
+        fail_msg: "No swap devices active"
+
+    - name: Check zsh is default shell
+      ansible.builtin.command:
+        cmd: "getent passwd {{ host_user }}"
+      register: user_shell
+      changed_when: false
+
+    - name: Verify zsh is default
+      ansible.builtin.assert:
+        that: "'/usr/bin/zsh' in user_shell.stdout"
+        fail_msg: "Zsh is not the default shell"
+
+    - name: Validation complete
+      ansible.builtin.debug:
+        msg: "All validation checks passed successfully"

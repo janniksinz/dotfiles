@@ -1,0 +1,3 @@
+---
+rofi_packages:
+  - rofi-wayland

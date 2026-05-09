@@ -1,0 +1,6 @@
+---
+- name: Install OBS Studio
+  become: true
+  community.general.pacman:
+    name: obs-studio
+    state: present

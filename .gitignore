@@ -1,5 +1,6 @@
 vault-password.txt
 /callback_plugins/__pycache__
+collections/
 
 roles/neovim/files/lazy-lock.json
 
@@ -8,3 +9,4 @@ roles/neovim/files/lazy-lock.json
 
 # Crush directory
 .crush/
+*lampson.md

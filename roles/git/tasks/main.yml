@@ -1,0 +1,53 @@
+---
+- name: Install git packages
+  become: true
+  community.general.pacman:
+    name: "{{ git_packages }}"
+    state: present
+
+- name: Ensure git config directory exists
+  ansible.builtin.file:
+    path: "{{ user_home }}/.config/git"
+    state: directory
+    mode: "0755"
+
+- name: Get git email from 1Password
+  ansible.builtin.command:
+    cmd: "op read '{{ op.git.user.email }}'"
+  register: git_email_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  no_log: true
+  when: op_installed | default(false)
+
+- name: Get git signing key from 1Password
+  ansible.builtin.command:
+    cmd: "op read '{{ git_profiles[0].signing_key_vault }}'"
+  register: git_signing_key_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  no_log: true
+  when:
+    - op_installed | default(false)
+    - git_signing
+
+- name: Deploy git config
+  ansible.builtin.template:
+    src: gitconfig.j2
+    dest: "{{ user_home }}/.config/git/config"
+    mode: "0644"
+
+- name: Ensure work directory exists
+  ansible.builtin.file:
+    path: "{{ user_home }}/work"
+    state: directory
+    mode: "0755"
+
+- name: Deploy work git config
+  ansible.builtin.template:
+    src: gitconfig-work.j2
+    dest: "{{ user_home }}/work/.gitconfig"
+    mode: "0644"
+  when: op_installed | default(false)

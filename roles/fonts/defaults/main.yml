@@ -1,0 +1,11 @@
+---
+fonts_nerd_fonts:
+  - ttf-jetbrains-mono-nerd
+  - ttf-firacode-nerd
+  - ttf-hack-nerd
+
+fonts_extra:
+  - noto-fonts
+  - noto-fonts-emoji
+  - noto-fonts-cjk
+  - ttf-liberation

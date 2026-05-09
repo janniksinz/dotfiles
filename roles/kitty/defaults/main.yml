@@ -1,0 +1,6 @@
+---
+kitty_packages:
+  - kitty
+
+kitty_font: "JetBrainsMono Nerd Font"
+kitty_font_size: 14

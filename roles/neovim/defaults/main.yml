@@ -1,0 +1,7 @@
+---
+neovim_packages:
+  - neovim
+  - tree-sitter-cli
+  - ripgrep
+  - fd
+  - xclip

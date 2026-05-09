@@ -1,0 +1,19 @@
+---
+- name: Install tmux
+  become: true
+  community.general.pacman:
+    name: "{{ tmux_packages }}"
+    state: present
+
+- name: Install TPM
+  ansible.builtin.git:
+    repo: https://github.com/tmux-plugins/tpm.git
+    dest: "{{ user_home }}/.tmux/plugins/tpm"
+    depth: 1
+    update: false
+
+- name: Deploy tmux config
+  ansible.builtin.copy:
+    src: tmux.conf
+    dest: "{{ user_home }}/.tmux.conf"
+    mode: "0644"

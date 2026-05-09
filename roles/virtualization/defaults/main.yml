@@ -1,0 +1,10 @@
+---
+virtualization_packages:
+  - qemu-full
+  - virt-manager
+  - virt-viewer
+  - libguestfs
+  - dnsmasq
+  - bridge-utils
+  - vde2
+  - swtpm

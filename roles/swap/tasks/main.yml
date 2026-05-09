@@ -1,0 +1,26 @@
+---
+- name: Skip on WSL
+  ansible.builtin.meta: end_role
+  when: ansible_host_environment_is_wsl | default(false) | bool
+
+- name: Install zram-generator
+  become: true
+  community.general.pacman:
+    name: zram-generator
+    state: present
+
+- name: Deploy zram-generator configuration
+  become: true
+  ansible.builtin.template:
+    src: zram-generator.conf.j2
+    dest: /etc/systemd/zram-generator.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart systemd-zram-setup
+
+- name: Ensure systemd-zram-setup target is enabled
+  become: true
+  ansible.builtin.systemd:
+    name: systemd-zram-setup@zram0.service
+    daemon_reload: true

@@ -1,0 +1,26 @@
+---
+- name: Install git-credential-manager
+  kewlfft.aur.aur:
+    name: git-credential-manager
+    use: yay
+    state: present
+  become: "{{ ansible_user_id == 'root' }}"
+  become_user: "{{ host_user }}"
+
+- name: Configure GCM credential store to use secretservice
+  community.general.git_config:
+    name: credential.credentialStore
+    scope: global
+    value: secretservice
+
+- name: Configure GCM helper path
+  community.general.git_config:
+    name: credential.helper
+    scope: global
+    value: /usr/lib/git-credential-manager/git-credential-manager
+
+- name: Disable GCM GUI prompts
+  community.general.git_config:
+    name: credential.guiPrompt
+    scope: global
+    value: "false"

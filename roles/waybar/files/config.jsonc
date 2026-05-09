@@ -1,0 +1,68 @@
+{
+    "layer": "top",
+    "position": "top",
+    "height": 36,
+    "spacing": 4,
+
+    "modules-left": ["hyprland/workspaces", "hyprland/window"],
+    "modules-center": ["clock"],
+    "modules-right": ["pulseaudio", "network", "cpu", "memory", "temperature", "tray"],
+
+    "hyprland/workspaces": {
+        "format": "{icon}",
+        "on-click": "activate",
+        "format-icons": {
+            "active": "",
+            "default": ""
+        }
+    },
+
+    "hyprland/window": {
+        "format": "{}",
+        "max-length": 50
+    },
+
+    "clock": {
+        "format": "{:%H:%M}",
+        "format-alt": "{:%A, %d %B %Y}",
+        "tooltip-format": "<tt>{calendar}</tt>"
+    },
+
+    "cpu": {
+        "format": " {usage}%",
+        "tooltip": true,
+        "interval": 5
+    },
+
+    "memory": {
+        "format": " {}%",
+        "interval": 5
+    },
+
+    "temperature": {
+        "critical-threshold": 80,
+        "format": " {temperatureC}°C",
+        "format-critical": " {temperatureC}°C"
+    },
+
+    "network": {
+        "format-wifi": " {signalStrength}%",
+        "format-ethernet": " {ifname}",
+        "format-disconnected": "⚠ Disconnected",
+        "tooltip-format": "{ifname}: {ipaddr}/{cidr}"
+    },
+
+    "pulseaudio": {
+        "format": "{icon} {volume}%",
+        "format-muted": " Muted",
+        "format-icons": {
+            "default": ["", "", ""]
+        },
+        "on-click": "pavucontrol"
+    },
+
+    "tray": {
+        "icon-size": 16,
+        "spacing": 10
+    }
+}

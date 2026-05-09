@@ -1,0 +1,37 @@
+---
+- name: Ensure claude config directory exists
+  ansible.builtin.file:
+    path: "{{ user_home }}/.claude"
+    state: directory
+    mode: "0755"
+
+- name: Get Claude bearer token from 1Password
+  ansible.builtin.command:
+    cmd: "op read '{{ claude_op_bearer_token }}'"
+  register: claude_bearer_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  no_log: true
+  when: op_installed | default(false)
+
+- name: Get Claude base URL from 1Password
+  ansible.builtin.command:
+    cmd: "op read '{{ claude_op_base_url }}'"
+  register: claude_url_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  no_log: true
+  when: op_installed | default(false)
+
+- name: Deploy Claude Code settings
+  ansible.builtin.template:
+    src: settings.json.j2
+    dest: "{{ user_home }}/.claude/settings.json"
+    mode: "0644"
+  when:
+    - op_installed | default(false)
+    - ansible_check_mode or (claude_bearer_result.stdout is defined and claude_bearer_result.stdout | length > 0)
+    - ansible_check_mode or (claude_url_result.stdout is defined and claude_url_result.stdout | length > 0)
+  no_log: true

@@ -1,0 +1,20 @@
+---
+claude_model: opus
+claude_plugins:
+  - "skill-creator@claude-plugins-official"
+  - "caveman@caveman"
+  - "devops-skills@akin-ozer"
+
+claude_static_env:
+  CLAUDE_CODE_USE_BEDROCK: "1"
+  CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING: "1"
+  ANTHROPIC_MODEL: "claude-opus-4.6"
+  ANTHROPIC_DEFAULT_OPUS_MODEL: "claude-opus-4.6"
+  ANTHROPIC_DEFAULT_SONNET_MODEL: "claude-sonnet-4.6"
+  ANTHROPIC_DEFAULT_HAIKU_MODEL: "claude-haiku-4.5"
+  CLAUDE_CODE_ATTRIBUTION_HEADER: "0"
+  CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1"
+  CLAUDE_CODE_FORK_SUBAGENT: "1"
+
+claude_op_bearer_token: "op://MCB/MB oneAPI Opus4.6/credential"
+claude_op_base_url: "op://MCB/MB oneAPI Opus4.6/hostname"

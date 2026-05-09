@@ -1,0 +1,21 @@
+---
+- name: Install Python packages
+  become: true
+  community.general.pacman:
+    name: "{{ python_packages }}"
+    state: present
+
+- name: Ensure pipx path exists
+  ansible.builtin.command:
+    cmd: pipx ensurepath
+  changed_when: false
+
+- name: Install pipx packages
+  ansible.builtin.command:
+    cmd: "pipx install {{ item }}"
+  loop: "{{ python_pipx_packages }}"
+  register: pipx_result
+  changed_when: "'installed package' in pipx_result.stdout"
+  failed_when:
+    - pipx_result.rc != 0
+    - "'already' not in pipx_result.stderr"

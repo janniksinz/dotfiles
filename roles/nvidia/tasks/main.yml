@@ -1,0 +1,131 @@
+---
+- name: Skip on WSL
+  ansible.builtin.meta: end_role
+  when: ansible_host_environment_is_wsl | default(false) | bool
+
+- name: Install nvidia packages
+  become: true
+  community.general.pacman:
+    name: "{{ nvidia_packages }}"
+    state: present
+
+- name: Install 32-bit nvidia libs for gaming
+  become: true
+  community.general.pacman:
+    name:
+      - lib32-nvidia-utils
+      - lib32-opencl-nvidia
+    state: present
+  when: "'gaming' in (default_roles | default([]))"
+
+- name: Deploy nvidia modprobe configuration
+  become: true
+  ansible.builtin.template:
+    src: nvidia-modprobe.conf.j2
+    dest: /etc/modprobe.d/nvidia.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: rebuild initramfs
+
+- name: Configure nvidia modules in mkinitcpio
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/mkinitcpio.conf
+    regexp: '^MODULES=\(.*\)'
+    line: "MODULES=({{ nvidia_kernel_modules | join(' ') }})"
+    backup: true
+  notify: rebuild initramfs
+
+- name: Ensure pacman hooks directory exists
+  become: true
+  ansible.builtin.file:
+    path: /etc/pacman.d/hooks
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy pacman hook for nvidia initramfs rebuild
+  become: true
+  ansible.builtin.copy:
+    content: |
+      [Trigger]
+      Operation=Install
+      Operation=Upgrade
+      Operation=Remove
+      Type=Package
+      Target=nvidia-open-dkms
+      Target=nvidia-dkms
+      Target=linux
+      Target=linux-headers
+
+      [Action]
+      Description=Regenerating initramfs after nvidia/kernel update...
+      Depends=mkinitcpio
+      When=PostTransaction
+      NeedsTargets
+      Exec=/usr/bin/mkinitcpio -P
+    dest: /etc/pacman.d/hooks/nvidia.hook
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Deploy nvidia power management udev rules
+  become: true
+  ansible.builtin.copy:
+    content: |
+      # Managed by Ansible - nvidia role
+      # Enable runtime PM for nvidia GPU
+      ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030000", ATTR{power/control}="auto"
+      ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x030200", ATTR{power/control}="auto"
+    dest: /etc/udev/rules.d/80-nvidia-pm.rules
+    owner: root
+    group: root
+    mode: "0644"
+  when: nvidia_power_management
+  notify: reload udev rules
+
+- name: Check if nvidia-suspend service exists
+  ansible.builtin.stat:
+    path: /usr/lib/systemd/system/nvidia-suspend.service
+  register: nvidia_suspend_unit
+
+- name: Enable nvidia suspend/hibernate/resume services
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: true
+  loop: "{{ nvidia_services }}"
+  when: nvidia_suspend_unit.stat.exists | default(false)
+
+- name: Deploy /etc/environment with nvidia variables
+  become: true
+  ansible.builtin.template:
+    src: environment.j2
+    dest: /etc/environment
+    owner: root
+    group: root
+    mode: "0644"
+    backup: true
+  notify: rebuild initramfs
+
+- name: Deploy hyprland nvidia environment config
+  ansible.builtin.template:
+    src: hypr-env.conf.j2
+    dest: "{{ user_home }}/.config/hypr/modules/env.conf"
+    owner: "{{ host_user }}"
+    mode: "0644"
+  when: "'hyprland' in (default_roles | default([]))"
+
+- name: Verify nvidia modprobe config exists
+  ansible.builtin.stat:
+    path: /etc/modprobe.d/nvidia.conf
+  register: nvidia_modprobe_stat
+
+- name: Verify nvidia modules in mkinitcpio
+  ansible.builtin.command:
+    cmd: grep -q "nvidia nvidia_modeset nvidia_uvm nvidia_drm" /etc/mkinitcpio.conf
+  changed_when: false
+  failed_when: false
+  register: nvidia_mkinitcpio_check

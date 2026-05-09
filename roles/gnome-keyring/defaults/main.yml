@@ -1,0 +1,5 @@
+---
+gnome_keyring_packages:
+  - gnome-keyring
+  - libsecret
+  - seahorse

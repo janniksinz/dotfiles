@@ -1,0 +1,16 @@
+---
+- name: Install Brave browser
+  kewlfft.aur.aur:
+    name: brave-bin
+    use: yay
+    state: present
+  become: "{{ ansible_user_id == 'root' }}"
+  become_user: "{{ host_user }}"
+
+- name: Deploy Brave Wayland flags
+  ansible.builtin.copy:
+    content: |
+      --enable-features=WaylandLinuxDrmSyncobj
+      --ozone-platform-hint=auto
+    dest: "{{ user_home }}/.config/brave-flags.conf"
+    mode: "0644"

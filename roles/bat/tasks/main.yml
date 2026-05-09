@@ -1,0 +1,21 @@
+---
+- name: Install bat
+  become: true
+  community.general.pacman:
+    name: bat
+    state: present
+
+- name: Ensure bat config directory exists
+  ansible.builtin.file:
+    path: "{{ user_home }}/.config/bat"
+    state: directory
+    mode: "0755"
+
+- name: Deploy bat config
+  ansible.builtin.copy:
+    content: |
+      --theme="Catppuccin Mocha"
+      --style="numbers,changes"
+      --italic-text=always
+    dest: "{{ user_home }}/.config/bat/config"
+    mode: "0644"

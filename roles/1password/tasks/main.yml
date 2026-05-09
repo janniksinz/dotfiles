@@ -1,0 +1,45 @@
+---
+- name: Check 1Password CLI is installed
+  ansible.builtin.command:
+    cmd: which op
+  register: op_check
+  changed_when: false
+  failed_when: false
+
+- name: Ensure 1Password SSH agent socket directory exists
+  ansible.builtin.file:
+    path: "{{ user_home }}/.1password"
+    state: directory
+    mode: "0700"
+
+- name: Ensure 1Password config directory exists
+  ansible.builtin.file:
+    path: "{{ user_home }}/.config/op"
+    state: directory
+    mode: "0700"
+
+- name: Configure sudoers to preserve OP credentials
+  become: true
+  ansible.builtin.copy:
+    content: |
+      Defaults env_keep += "OP_SERVICE_ACCOUNT_TOKEN"
+      Defaults env_keep += "OP_CONFIG_DIR"
+    dest: /etc/sudoers.d/op-env
+    owner: root
+    group: root
+    mode: "0440"
+    validate: "visudo -cf %s"
+
+- name: Configure sudo for AUR builds (NOPASSWD + no TTY requirement)
+  become: true
+  ansible.builtin.copy:
+    content: |
+      {{ host_user }} ALL=(ALL) NOPASSWD: /usr/bin/pacman
+      Defaults:{{ host_user }} !requiretty
+    dest: /etc/sudoers.d/pacman-nopasswd
+    owner: root
+    group: root
+    mode: "0440"
+    validate: "visudo -cf %s"
+
+

@@ -1,0 +1,15 @@
+---
+zsh_packages:
+  - zsh
+
+zsh_omz_plugins:
+  - git
+  - zoxide
+  - fzf
+  - docker
+  - ssh-agent
+
+zsh_extra_paths:
+  - "$HOME/.local/bin"
+  - "$HOME/go/bin"
+  - "$HOME/.npm-global/bin"

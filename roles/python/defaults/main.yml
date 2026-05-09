@@ -1,0 +1,10 @@
+---
+python_packages:
+  - python
+  - python-pip
+  - python-pipx
+
+python_pipx_packages:
+  - black
+  - ruff
+  - virtualenv

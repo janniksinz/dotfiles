@@ -1,0 +1,23 @@
+---
+base_packages:
+  - base-devel
+  - wget
+  - curl
+  - unzip
+  - ripgrep
+  - fd
+  - tree
+  - man-db
+  - htop
+  - smartmontools
+  - xdg-utils
+  - xdg-desktop-portal
+  - polkit
+  - gnupg
+
+base_locale: en_US.UTF-8
+base_timezone: Europe/Berlin
+
+pacman_parallel_downloads: 5
+pacman_color: true
+pacman_ilovecandy: true

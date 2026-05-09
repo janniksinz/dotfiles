@@ -1,0 +1,6 @@
+---
+- name: Install gnome-keyring packages
+  become: true
+  community.general.pacman:
+    name: "{{ gnome_keyring_packages }}"
+    state: present

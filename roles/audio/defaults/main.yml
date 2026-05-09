@@ -1,0 +1,10 @@
+---
+audio_packages:
+  - pipewire
+  - pipewire-alsa
+  - pipewire-jack
+  - pipewire-pulse
+  - wireplumber
+  - pavucontrol
+  - gst-plugin-pipewire
+  - libpulse

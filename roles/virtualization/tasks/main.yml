@@ -1,0 +1,28 @@
+---
+- name: Install virtualization packages
+  become: true
+  community.general.pacman:
+    name: "{{ virtualization_packages }}"
+    state: present
+
+- name: Add user to libvirt group
+  become: true
+  ansible.builtin.user:
+    name: "{{ host_user }}"
+    groups:
+      - libvirt
+      - kvm
+    append: true
+
+- name: Check if libvirtd service exists
+  ansible.builtin.stat:
+    path: /usr/lib/systemd/system/libvirtd.service
+  register: libvirtd_unit
+
+- name: Enable libvirtd service
+  become: true
+  ansible.builtin.systemd:
+    name: libvirtd.service
+    enabled: true
+    state: started
+  when: libvirtd_unit.stat.exists

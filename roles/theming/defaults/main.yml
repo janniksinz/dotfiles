@@ -1,0 +1,16 @@
+---
+theming_packages:
+  - papirus-icon-theme
+  - nwg-look
+  - qt6ct
+  - kvantum
+
+theming_aur_packages:
+  - catppuccin-gtk-theme-mocha
+  - catppuccin-cursors-mocha
+
+theming_gtk_theme: catppuccin-mocha-blue-standard+default
+theming_icon_theme: Papirus-Dark
+theming_cursor_theme: catppuccin-mocha-dark-cursors
+theming_cursor_size: 24
+theming_font: "JetBrainsMono Nerd Font 11"

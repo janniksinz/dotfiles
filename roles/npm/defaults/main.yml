@@ -1,0 +1,6 @@
+---
+npm_packages:
+  - nodejs
+  - npm
+  - fnm
+

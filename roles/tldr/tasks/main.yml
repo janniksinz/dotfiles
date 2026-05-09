@@ -1,0 +1,11 @@
+---
+- name: Install tldr
+  become: true
+  community.general.pacman:
+    name: tldr
+    state: present
+
+- name: Update tldr cache
+  ansible.builtin.command:
+    cmd: tldr --update
+    creates: "{{ user_home }}/.local/share/tldr"

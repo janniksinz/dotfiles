@@ -1,0 +1,6 @@
+---
+- name: Install zoxide
+  become: true
+  community.general.pacman:
+    name: zoxide
+    state: present

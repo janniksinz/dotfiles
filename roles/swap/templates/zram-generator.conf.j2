@@ -1,0 +1,4 @@
+# Managed by Ansible - swap role
+[zram0]
+zram-size = {{ swap_zram_size_gb * 1024 }}
+compression-algorithm = {{ swap_zram_algorithm }}

@@ -1,0 +1,28 @@
+---
+- name: Skip on WSL
+  ansible.builtin.meta: end_role
+  when: ansible_host_environment_is_wsl | default(false) | bool
+
+- name: Install waybar packages
+  become: true
+  community.general.pacman:
+    name: "{{ waybar_packages }}"
+    state: present
+
+- name: Ensure waybar config directory exists
+  ansible.builtin.file:
+    path: "{{ user_home }}/.config/waybar"
+    state: directory
+    mode: "0755"
+
+- name: Deploy waybar config
+  ansible.builtin.copy:
+    src: config.jsonc
+    dest: "{{ user_home }}/.config/waybar/config.jsonc"
+    mode: "0644"
+
+- name: Deploy waybar style
+  ansible.builtin.copy:
+    src: style.css
+    dest: "{{ user_home }}/.config/waybar/style.css"
+    mode: "0644"

@@ -1,0 +1,9 @@
+---
+go_packages:
+  - go
+
+go_tools:
+  - package: github.com/go-task/task/v3/cmd/task@latest
+    cmd: task
+  - package: github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+    cmd: golangci-lint

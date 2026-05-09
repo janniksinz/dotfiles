@@ -1,0 +1,27 @@
+---
+- name: Install docker packages
+  become: true
+  community.general.pacman:
+    name: "{{ docker_packages }}"
+    state: present
+
+- name: Add user to docker group
+  become: true
+  ansible.builtin.user:
+    name: "{{ host_user }}"
+    groups:
+      - docker
+    append: true
+
+- name: Check if docker service exists
+  ansible.builtin.stat:
+    path: /usr/lib/systemd/system/docker.service
+  register: docker_unit
+
+- name: Enable docker service
+  become: true
+  ansible.builtin.systemd:
+    name: docker.service
+    enabled: true
+    state: started
+  when: docker_unit.stat.exists

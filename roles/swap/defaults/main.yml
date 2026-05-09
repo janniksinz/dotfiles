@@ -1,0 +1,3 @@
+---
+swap_zram_size_gb: 16
+swap_zram_algorithm: zstd

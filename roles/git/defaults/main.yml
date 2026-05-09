@@ -1,0 +1,8 @@
+---
+git_packages:
+  - git
+  - git-delta
+
+git_default_branch: main
+git_editor: nvim
+git_signing: true

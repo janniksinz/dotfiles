@@ -1,0 +1,98 @@
+/* Catppuccin Mocha */
+@define-color base #1e1e2e;
+@define-color mantle #181825;
+@define-color crust #11111b;
+@define-color text #cdd6f4;
+@define-color subtext0 #a6adc8;
+@define-color surface0 #313244;
+@define-color surface1 #45475a;
+@define-color blue #89b4fa;
+@define-color lavender #b4befe;
+@define-color green #a6e3a1;
+@define-color yellow #f9e2af;
+@define-color peach #fab387;
+@define-color red #f38ba8;
+@define-color mauve #cba6f7;
+@define-color teal #94e2d5;
+
+* {
+    font-family: "JetBrainsMono Nerd Font", sans-serif;
+    font-size: 13px;
+    min-height: 0;
+}
+
+window#waybar {
+    background-color: @base;
+    color: @text;
+    border-bottom: 2px solid @surface0;
+}
+
+#workspaces button {
+    padding: 0 8px;
+    color: @subtext0;
+    border-radius: 6px;
+    margin: 4px 2px;
+}
+
+#workspaces button.active {
+    background-color: @surface1;
+    color: @blue;
+}
+
+#workspaces button:hover {
+    background-color: @surface0;
+}
+
+#clock,
+#cpu,
+#memory,
+#temperature,
+#network,
+#pulseaudio,
+#tray {
+    padding: 0 10px;
+    margin: 4px 2px;
+    border-radius: 6px;
+    background-color: @surface0;
+}
+
+#clock {
+    color: @blue;
+    font-weight: bold;
+}
+
+#cpu {
+    color: @green;
+}
+
+#memory {
+    color: @mauve;
+}
+
+#temperature {
+    color: @yellow;
+}
+
+#temperature.critical {
+    color: @red;
+}
+
+#network {
+    color: @teal;
+}
+
+#network.disconnected {
+    color: @red;
+}
+
+#pulseaudio {
+    color: @lavender;
+}
+
+#pulseaudio.muted {
+    color: @subtext0;
+}
+
+#tray {
+    background-color: transparent;
+}

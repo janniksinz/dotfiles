@@ -1,0 +1,33 @@
+{
+  "env": {
+{% if claude_bearer_result.stdout is defined %}
+    "AWS_BEARER_TOKEN_BEDROCK": "{{ claude_bearer_result.stdout }}",
+{% endif %}
+{% if claude_url_result.stdout is defined %}
+    "ANTHROPIC_BEDROCK_BASE_URL": "{{ claude_url_result.stdout }}",
+{% endif %}
+{% for key, value in claude_static_env.items() %}
+    "{{ key }}": "{{ value }}"{{ "," if not loop.last else "" }}
+{% endfor %}
+  },
+  "permissions": {
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Read(./config/credentials.json)",
+      "Read(./build)"
+    ]
+  },
+  "model": "{{ claude_model }}",
+  "availableModels": ["opus", "sonnet", "haiku"],
+  "enabledPlugins": {
+{% for plugin in claude_plugins %}
+    "{{ plugin }}": true{{ "," if not loop.last else "" }}
+{% endfor %}
+  },
+  "alwaysThinkingEnabled": true,
+  "effortLevel": "high",
+  "showThinkingSummaries": true,
+  "theme": "auto"
+}

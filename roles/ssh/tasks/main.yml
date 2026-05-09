@@ -1,0 +1,40 @@
+---
+- name: Install SSH packages
+  become: true
+  community.general.pacman:
+    name: "{{ ssh_packages }}"
+    state: present
+
+- name: Ensure .ssh directory exists
+  ansible.builtin.file:
+    path: "{{ user_home }}/.ssh"
+    state: directory
+    mode: "0700"
+
+- name: Deploy SSH config for 1Password agent
+  ansible.builtin.copy:
+    content: |
+      Host *
+          IdentityAgent "~/.1password/agent.sock"
+    dest: "{{ user_home }}/.ssh/config"
+    mode: "0600"
+
+- name: Get SSH public key from 1Password
+  ansible.builtin.command:
+    cmd: "op read '{{ op.ssh.personal[0].vault_path }}' --force"
+  register: ssh_pubkey_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  no_log: true
+  when: op_installed | default(false)
+
+- name: Deploy SSH public key
+  ansible.builtin.copy:
+    content: "{{ ssh_pubkey_result.stdout }}\n"
+    dest: "{{ user_home }}/.ssh/{{ op.ssh.personal[0].name }}.pub"
+    mode: "0644"
+  when:
+    - op_installed | default(false)
+    - ansible_check_mode or (ssh_pubkey_result.stdout is defined and ssh_pubkey_result.stdout | length > 0)
+  no_log: true

@@ -1,0 +1,28 @@
+---
+- name: Check if miniconda is installed
+  ansible.builtin.stat:
+    path: "{{ conda_install_dir }}/bin/conda"
+  register: conda_installed
+
+- name: Download miniconda installer
+  ansible.builtin.get_url:
+    url: "{{ conda_installer_url }}"
+    dest: /tmp/miniconda.sh
+    mode: "0755"
+  when: not conda_installed.stat.exists
+
+- name: Install miniconda
+  ansible.builtin.command:
+    cmd: "/tmp/miniconda.sh -b -p {{ conda_install_dir }}"
+  when: not conda_installed.stat.exists
+
+- name: Remove installer
+  ansible.builtin.file:
+    path: /tmp/miniconda.sh
+    state: absent
+
+- name: Initialize conda for zsh
+  ansible.builtin.command:
+    cmd: "{{ conda_install_dir }}/bin/conda init zsh"
+  changed_when: false
+  when: not conda_installed.stat.exists

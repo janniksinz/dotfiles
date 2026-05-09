@@ -1,0 +1,94 @@
+################
+### MONITORS ###
+################
+
+monitor={{ hyprland_monitor }}
+
+
+###################
+### MY PROGRAMS ###
+###################
+
+$terminal = {{ hyprland_terminal }}
+$fileManager = {{ hyprland_file_manager }}
+$menu = {{ hyprland_menu }}
+
+
+#################
+### AUTOSTART ###
+#################
+
+exec-once = waybar
+exec-once = swaync
+exec-once = wl-clip-persist --clipboard regular
+exec-once = /usr/lib/polkit-kde-authentication-agent-1
+
+
+#####################
+### LOOK AND FEEL ###
+#####################
+
+decoration {
+    rounding = 10
+    rounding_power = 2
+    active_opacity = 1.0
+    inactive_opacity = 1.0
+
+    shadow {
+        enabled = true
+        range = 4
+        render_power = 3
+        color = rgba(1a1a1aee)
+    }
+
+    blur {
+        enabled = true
+        size = 3
+        passes = 1
+        vibrancy = 0.1696
+    }
+}
+
+animations {
+    enabled = yes, please :)
+
+    bezier = easeOutQuint, 0.23, 1, 0.32, 1
+    bezier = easeInOutCubic, 0.65, 0.05, 0.36, 1
+    bezier = linear, 0, 0, 1, 1
+    bezier = almostLinear, 0.5, 0.5, 0.75, 1
+    bezier = quick, 0.15, 0, 0.1, 1
+
+    animation = global, 1, 10, default
+    animation = border, 1, 5.39, easeOutQuint
+    animation = windows, 1, 4.79, easeOutQuint
+    animation = windowsIn, 1, 4.1, easeOutQuint, popin 87%
+    animation = windowsOut, 1, 1.49, linear, popin 87%
+    animation = fadeIn, 1, 1.73, almostLinear
+    animation = fadeOut, 1, 1.46, almostLinear
+    animation = fade, 1, 3.03, quick
+    animation = layers, 1, 3.81, easeOutQuint
+    animation = layersIn, 1, 4, easeOutQuint, fade
+    animation = layersOut, 1, 1.5, linear, fade
+    animation = fadeLayersIn, 1, 1.79, almostLinear
+    animation = fadeLayersOut, 1, 1.39, almostLinear
+    animation = workspaces, 1, 1.94, almostLinear, fade
+    animation = workspacesIn, 1, 1.21, almostLinear, fade
+    animation = workspacesOut, 1, 1.94, almostLinear, fade
+    animation = zoomFactor, 1, 7, quick
+}
+
+
+##############################
+### WINDOWS AND WORKSPACES ###
+##############################
+
+windowrule = suppress_event maximize, match:class .*
+windowrule = no_focus on, match:class ^$,match:title ^$,match:xwayland true,float on,fullscreen 0,pin off
+
+
+## SOURCING
+
+source = ~/.config/hypr/modules/env.conf
+source = ~/.config/hypr/modules/layout.conf
+source = ~/.config/hypr/modules/binds.conf
+source = ~/.config/hypr/modules/input.conf

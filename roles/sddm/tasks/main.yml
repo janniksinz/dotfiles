@@ -1,0 +1,43 @@
+---
+- name: Skip on WSL
+  ansible.builtin.meta: end_role
+  when: ansible_host_environment_is_wsl | default(false) | bool
+
+- name: Install SDDM packages
+  become: true
+  community.general.pacman:
+    name: "{{ sddm_packages }}"
+    state: present
+
+- name: Ensure SDDM config directory exists
+  become: true
+  ansible.builtin.file:
+    path: /etc/sddm.conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy SDDM configuration
+  become: true
+  ansible.builtin.copy:
+    content: |
+      [General]
+      DisplayServer=wayland
+      GreeterEnvironment=QT_WAYLAND_SHELL_INTEGRATION=layer-shell
+
+      [Wayland]
+      CompositorCommand=Hyprland
+
+      [Theme]
+      Current=
+    dest: /etc/sddm.conf.d/10-wayland.conf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Enable SDDM service
+  become: true
+  ansible.builtin.systemd:
+    name: sddm.service
+    enabled: true

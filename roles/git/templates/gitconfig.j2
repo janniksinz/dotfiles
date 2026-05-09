@@ -1,0 +1,51 @@
+[user]
+    name = {{ git_user_name }}
+{% if git_email_result is defined and git_email_result.stdout is defined %}
+    email = {{ git_email_result.stdout }}
+{% endif %}
+{% if git_signing and git_signing_key_result is defined and git_signing_key_result.stdout is defined %}
+    signingkey = {{ git_signing_key_result.stdout }}
+{% endif %}
+
+[init]
+    defaultBranch = {{ git_default_branch }}
+
+[core]
+    editor = {{ git_editor }}
+    pager = delta
+
+[interactive]
+    diffFilter = delta --color-only
+
+[delta]
+    navigate = true
+    side-by-side = true
+    line-numbers = true
+
+[merge]
+    conflictstyle = diff3
+
+[diff]
+    colorMoved = default
+
+[pull]
+    rebase = false
+
+{% if git_signing %}
+[gpg]
+    format = ssh
+
+[gpg "ssh"]
+    program = /opt/1Password/op-ssh-sign
+
+[commit]
+    gpgsign = true
+{% endif %}
+
+[credential]
+    credentialStore = secretservice
+    helper = /usr/lib/git-credential-manager/git-credential-manager
+    guiPrompt = false
+
+[includeIf "gitdir:~/work/"]
+    path = ~/work/.gitconfig

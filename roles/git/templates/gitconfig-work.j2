@@ -1,0 +1,10 @@
+# Work git config - managed by Ansible
+{% if op_installed | default(false) %}
+[user]
+    name = {{ git_user_name }}
+{% endif %}
+
+[credential "https://git.mbos.cloud"]
+    provider = gitlab
+    gitLabDevClientId = 7947ddff92d2e3a0f062abb29f866ca57cf4acef87f0cb934e219fffed1af060
+    gitLabAuthModes = browser

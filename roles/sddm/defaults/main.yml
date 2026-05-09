@@ -1,0 +1,6 @@
+---
+sddm_packages:
+  - sddm
+  - qt6-5compat
+  - qt6-declarative
+  - qt6-svg

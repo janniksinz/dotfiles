@@ -1,0 +1,76 @@
+---
+- name: Skip on WSL
+  ansible.builtin.meta: end_role
+  when: ansible_host_environment_is_wsl | default(false) | bool
+
+- name: Install theming packages
+  become: true
+  community.general.pacman:
+    name: "{{ theming_packages }}"
+    state: present
+
+- name: Install AUR theming packages
+  kewlfft.aur.aur:
+    name: "{{ theming_aur_packages }}"
+    use: yay
+    state: present
+  become: "{{ ansible_user_id == 'root' }}"
+  become_user: "{{ host_user }}"
+
+- name: Ensure GTK3 config directory exists
+  ansible.builtin.file:
+    path: "{{ user_home }}/.config/gtk-3.0"
+    state: directory
+    mode: "0755"
+
+- name: Deploy GTK3 settings
+  ansible.builtin.copy:
+    content: |
+      [Settings]
+      gtk-theme-name={{ theming_gtk_theme }}
+      gtk-icon-theme-name={{ theming_icon_theme }}
+      gtk-cursor-theme-name={{ theming_cursor_theme }}
+      gtk-cursor-theme-size={{ theming_cursor_size }}
+      gtk-font-name={{ theming_font }}
+      gtk-application-prefer-dark-theme=1
+    dest: "{{ user_home }}/.config/gtk-3.0/settings.ini"
+    mode: "0644"
+
+- name: Ensure GTK4 config directory exists
+  ansible.builtin.file:
+    path: "{{ user_home }}/.config/gtk-4.0"
+    state: directory
+    mode: "0755"
+
+- name: Deploy GTK4 settings
+  ansible.builtin.copy:
+    content: |
+      [Settings]
+      gtk-theme-name={{ theming_gtk_theme }}
+      gtk-icon-theme-name={{ theming_icon_theme }}
+      gtk-cursor-theme-name={{ theming_cursor_theme }}
+      gtk-cursor-theme-size={{ theming_cursor_size }}
+      gtk-font-name={{ theming_font }}
+      gtk-application-prefer-dark-theme=1
+    dest: "{{ user_home }}/.config/gtk-4.0/settings.ini"
+    mode: "0644"
+
+- name: Set cursor theme via hyprland env
+  ansible.builtin.lineinfile:
+    path: "{{ user_home }}/.config/hypr/modules/env.conf"
+    regexp: '^env = XCURSOR_THEME'
+    line: "env = XCURSOR_THEME,{{ theming_cursor_theme }}"
+    create: true
+    mode: "0644"
+
+- name: Deploy Qt6 dark theme config
+  become: true
+  ansible.builtin.copy:
+    content: |
+      [Appearance]
+      style=kvantum-dark
+    dest: /etc/xdg/qt6ct/qt6ct.conf
+    owner: root
+    group: root
+    mode: "0644"
+  failed_when: false

@@ -1,0 +1,16 @@
+---
+- name: Install Google Chrome
+  kewlfft.aur.aur:
+    name: google-chrome
+    use: yay
+    state: present
+  become: "{{ ansible_user_id == 'root' }}"
+  become_user: "{{ host_user }}"
+
+- name: Deploy Chrome Wayland flags
+  ansible.builtin.copy:
+    content: |
+      --enable-features=WaylandLinuxDrmSyncobj
+      --ozone-platform-hint=auto
+    dest: "{{ user_home }}/.config/chrome-flags.conf"
+    mode: "0644"

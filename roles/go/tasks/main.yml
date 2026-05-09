@@ -1,0 +1,24 @@
+---
+- name: Install Go
+  become: true
+  community.general.pacman:
+    name: "{{ go_packages }}"
+    state: present
+
+- name: Ensure GOPATH bin directory exists
+  ansible.builtin.file:
+    path: "{{ user_home }}/go/bin"
+    state: directory
+    mode: "0755"
+
+- name: Install Go tools
+  ansible.builtin.command:
+    cmd: "go install {{ item.package }}"
+  environment:
+    GOPATH: "{{ user_home }}/go"
+    PATH: "{{ ansible_env.PATH }}:{{ user_home }}/go/bin"
+  loop: "{{ go_tools }}"
+  register: go_tool_result
+  changed_when: false
+  args:
+    creates: "{{ user_home }}/go/bin/{{ item.cmd }}"

@@ -1,0 +1,20 @@
+---
+- name: Install spotify-launcher
+  become: true
+  community.general.pacman:
+    name: spotify-launcher
+    state: present
+
+- name: Ensure spotify-launcher config directory exists
+  ansible.builtin.file:
+    path: "{{ user_home }}/.config/spotify-launcher"
+    state: directory
+    mode: "0755"
+
+- name: Deploy spotify-launcher config with Wayland flags
+  ansible.builtin.copy:
+    content: |
+      [spotify-launcher]
+      extra_arguments = ["--enable-features=WaylandLinuxDrmSyncobj", "--ozone-platform-hint=auto"]
+    dest: "{{ user_home }}/.config/spotify-launcher.conf"
+    mode: "0644"

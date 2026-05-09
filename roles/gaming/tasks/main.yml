@@ -1,0 +1,14 @@
+---
+- name: Install gaming packages
+  become: true
+  community.general.pacman:
+    name: "{{ gaming_packages }}"
+    state: present
+
+- name: Install gaming AUR packages
+  kewlfft.aur.aur:
+    name: "{{ gaming_aur_packages }}"
+    use: yay
+    state: present
+  become: "{{ ansible_user_id == 'root' }}"
+  become_user: "{{ host_user }}"

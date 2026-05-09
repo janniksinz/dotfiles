@@ -1,0 +1,113 @@
+---
+- name: Ensure pacman parallel downloads configured
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/pacman.conf
+    regexp: '^#?ParallelDownloads'
+    line: "ParallelDownloads = {{ pacman_parallel_downloads }}"
+
+- name: Enable pacman Color
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/pacman.conf
+    regexp: '^#?Color'
+    line: "Color"
+  when: pacman_color
+
+- name: Enable pacman ILoveCandy
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/pacman.conf
+    regexp: '^#?ILoveCandy'
+    line: "ILoveCandy"
+    insertafter: '^Color'
+  when: pacman_ilovecandy
+
+- name: Ensure multilib repository is enabled
+  become: true
+  ansible.builtin.replace:
+    path: /etc/pacman.conf
+    regexp: '^#\[multilib\]\n#Include'
+    replace: '[multilib]\nInclude'
+
+- name: Update package database
+  become: true
+  community.general.pacman:
+    update_cache: true
+
+- name: Install base packages
+  become: true
+  community.general.pacman:
+    name: "{{ base_packages }}"
+    state: present
+
+
+- name: Ensure locale is generated
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/locale.gen
+    regexp: '^#?{{ base_locale }}'
+    line: "{{ base_locale }} UTF-8"
+  notify: generate locale
+
+- name: Set system locale
+  become: true
+  ansible.builtin.copy:
+    content: "LANG={{ base_locale }}\n"
+    dest: /etc/locale.conf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Set timezone
+  become: true
+  ansible.builtin.file:
+    src: "/usr/share/zoneinfo/{{ base_timezone }}"
+    dest: /etc/localtime
+    state: link
+    force: true
+
+- name: Enable NTP sync
+  become: true
+  ansible.builtin.systemd:
+    name: systemd-timesyncd.service
+    enabled: true
+    state: started
+
+- name: Enable fstrim timer for SSD
+  become: true
+  ansible.builtin.systemd:
+    name: fstrim.timer
+    enabled: true
+    state: started
+
+- name: Ensure yay is installed
+  ansible.builtin.command:
+    cmd: which yay
+  register: yay_check
+  changed_when: false
+  failed_when: false
+
+- name: Install yay from AUR
+  when: yay_check.rc != 0
+  block:
+    - name: Create temp directory for yay build
+      ansible.builtin.tempfile:
+        state: directory
+      register: yay_tmp
+
+    - name: Clone yay repository
+      ansible.builtin.git:
+        repo: https://aur.archlinux.org/yay.git
+        dest: "{{ yay_tmp.path }}/yay"
+        depth: 1
+
+    - name: Build and install yay
+      ansible.builtin.command:
+        cmd: makepkg -si --noconfirm
+        chdir: "{{ yay_tmp.path }}/yay"
+
+    - name: Remove temp directory
+      ansible.builtin.file:
+        path: "{{ yay_tmp.path }}"
+        state: absent

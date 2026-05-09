@@ -203,7 +203,7 @@ function _task_done {
 function arch_setup() {
   if ! [ -x "$(command -v ansible)" ]; then
     __task "Installing Ansible (This may take a few minutes)"
-    _cmd "sudo pacman -Sy --noconfirm"
+    _cmd "sudo pacman -Syu --noconfirm"
     _cmd "sudo pacman -S --noconfirm ansible"
     _cmd "sudo pacman -S --noconfirm python-argcomplete"
     # _cmd "sudo activate-global-python-argcomplete3"
@@ -216,7 +216,7 @@ function arch_setup() {
     __task "Installing Python3 Pip"
     _cmd "sudo pacman -S --noconfirm python-pip"
   fi
-  if ! pip3 list | grep watchdog >/dev/null 2>&1; then
+  if ! pacman -Q python-watchdog >/dev/null 2>&1; then
     __task "Installing Python3 Watchdog"
     _cmd "sudo pacman -S --noconfirm python-watchdog"
   fi
@@ -224,6 +224,15 @@ function arch_setup() {
   if ! pacman -Q openssh >/dev/null 2>&1; then
     __task "Installing OpenSSH"
     _cmd "sudo pacman -S --noconfirm openssh"
+  fi
+
+  if ! command -v yay &>/dev/null; then
+    __task "Installing yay (AUR helper)"
+    _cmd "sudo pacman -S --needed --noconfirm base-devel git"
+    tmp_dir=$(mktemp -d)
+    _cmd "git clone https://aur.archlinux.org/yay.git $tmp_dir/yay"
+    _cmd "cd $tmp_dir/yay && makepkg -si --noconfirm"
+    rm -rf "$tmp_dir"
   fi
 
   __task "Setting Locale"
@@ -265,77 +274,65 @@ function ubuntu_setup() {
 }
 
 update_ansible_galaxy() {
-  local os=$1
-  local os_requirements=""
-  __task "Installing Ansible dependencies (This may take a few minutes)"
-  if [ -f "$DOTFILES_DIR/requirements/$os.yml" ]; then
-    __task "Installing Ansible dependencies for $os"
-    os_requirements="$DOTFILES_DIR/requirements/$os.yml"
-  fi
-  _cmd "ansible-galaxy install -r $DOTFILES_DIR/requirements/common.yml $os_requirements"
+  __task "Installing Ansible Galaxy dependencies"
+  _cmd "ansible-galaxy collection install -r $DOTFILES_DIR/requirements.yml -p $DOTFILES_DIR/collections"
+  _task_done
 }
 
 function confirmVaultAccess() {
   __task "Checking for 1Password CLI"
-  
+
   if ! command -v op >/dev/null 2>&1; then
     printf "${OVERWRITE}${CAT_RED} [X]  ${CAT_TEXT}Checking for 1Password CLI\n"
     printf " ${WARNING}${CAT_MAROON}   1Password CLI is not installed.${NC}\n"
-    printf " ${CAT_YELLOW}   Install with: brew install 1password-cli${NC}\n"
+    printf " ${CAT_YELLOW}   Install it from: https://1password.com/downloads/command-line/${NC}\n"
     exit 1
   fi
-  
+
   local op_version
   op_version=$(op --version)
   _task_done
-  
+
   __task "1Password CLI found: [$op_version] -- Authenticating..."
-  
-  # If running as root/sudo, try to get token from original user's profile
+
+  # If running as root/sudo, try to inherit token from original user's environment
   if [[ $EUID -eq 0 ]] && [[ -n "$SUDO_USER" ]]; then
     if [[ -z "$OP_SERVICE_ACCOUNT_TOKEN" ]]; then
-      # Get the original user's home directory
-      local orig_user_home=$(eval echo ~$SUDO_USER)
-      
-      # Try to source from original user's profile
+      local orig_user_home
+      orig_user_home=$(eval echo ~"$SUDO_USER")
       if [[ -f "$orig_user_home/.profile" ]]; then
         source "$orig_user_home/.profile" 2>/dev/null
-      elif [[ -f "$orig_user_home/.zshrc" ]]; then
-        source "$orig_user_home/.zshrc" 2>/dev/null
       elif [[ -f "$orig_user_home/.bash_profile" ]]; then
         source "$orig_user_home/.bash_profile" 2>/dev/null
       fi
     fi
   fi
-  
-  # Check if service account token is now set
+
+  # Path 1: service account token (CI / limited vault access)
   if [[ -n "$OP_SERVICE_ACCOUNT_TOKEN" ]]; then
-    # Export it to ensure it's available to child processes (like ansible)
     export OP_SERVICE_ACCOUNT_TOKEN
-    
-    # Verify the service account token works
     if op vault list >/dev/null 2>&1; then
       _task_done
-      printf "${CAT_GREEN} [✓] ${CAT_TEXT}Successfully authenticated with 1Password service account! ☕\n"
+      printf "${CAT_GREEN} [✓] ${CAT_TEXT}Authenticated via service account token.\n"
       return 0
     else
-      printf "${OVERWRITE}${CAT_RED} [✗]  ${CAT_TEXT}1Password service account authentication failed\n"
-      printf " ${CAT_MAROON}   The OP_SERVICE_ACCOUNT_TOKEN appears to be invalid or expired.${NC}\n"
+      printf "${OVERWRITE}${CAT_RED} [✗]  ${CAT_TEXT}Service account token invalid or expired.\n"
       exit 1
     fi
   fi
-  
-  # Service account token not found
-  printf "${OVERWRITE}${CAT_YELLOW} [!]  ${CAT_TEXT}OP_SERVICE_ACCOUNT_TOKEN not found\n\n"
-  printf "${CAT_TEXT}To fix this, add the following to ${CAT_LAVENDER}/etc/sudoers.d/op-env${CAT_TEXT}:\n\n"
-  printf "   ${CAT_LAVENDER}Defaults env_keep += \"OP_SERVICE_ACCOUNT_TOKEN\"${NC}\n\n"
-  printf "${CAT_TEXT}To create this file safely:\n\n"
-  printf "   ${CAT_LAVENDER}echo 'Defaults env_keep += \"OP_SERVICE_ACCOUNT_TOKEN\"' | sudo tee /etc/sudoers.d/op-env${NC}\n\n"
-  printf "${CAT_TEXT}Then ensure your token is exported in ${CAT_LAVENDER}~/.profile${CAT_TEXT}:\n\n"
-  printf "   ${CAT_LAVENDER}export OP_SERVICE_ACCOUNT_TOKEN='ops_your_token_here'${NC}\n\n"
-  printf "${CAT_TEXT}After that, source your profile and run:\n\n"
-  printf "   ${CAT_LAVENDER}source ~/.profile && sudo .dotfiles/bin/dotfiles${NC}\n\n"
-  
+
+  # Path 2: interactive op signin session (full vault access, personal machine)
+  if op vault list >/dev/null 2>&1; then
+    _task_done
+    printf "${CAT_GREEN} [✓] ${CAT_TEXT}Authenticated via existing op session.\n"
+    return 0
+  fi
+
+  # No session active — prompt user to sign in
+  printf "${OVERWRITE}${CAT_YELLOW} [!]  ${CAT_TEXT}No active 1Password session found.\n\n"
+  printf "${CAT_TEXT}Sign in with:\n\n"
+  printf "   ${CAT_LAVENDER}op signin${NC}\n\n"
+  printf "${CAT_TEXT}Then re-run dotfiles.\n\n"
   exit 1
 }
 
@@ -378,7 +375,7 @@ esac
 
 if ! [[ -d "$DOTFILES_DIR" ]]; then
   __task "Downloading dotfiles repository (This may take a minute)"
-  _cmd "git clone --quiet https://github.com/TechDufus/dotfiles.git $DOTFILES_DIR"
+  _cmd "git clone --quiet https://github.com/janniksinz/dotfiles.git $DOTFILES_DIR"
   _task_done
 else
   __task "Updating dotfiles repository"
@@ -519,14 +516,34 @@ if [[ -n "$DELETE_ROLE" ]]; then
   exit 0
 fi
 
-update_ansible_galaxy $ID
+update_ansible_galaxy
 
 confirmVaultAccess
 
-rm -f $VAULT_SECRET_FILE
+__task "Configuring sudo to preserve 1Password credentials"
+printf 'Defaults env_keep += "OP_SERVICE_ACCOUNT_TOKEN"\nDefaults env_keep += "OP_CONFIG_DIR"\n' | sudo tee /etc/sudoers.d/op-env > /dev/null
+sudo chmod 0440 /etc/sudoers.d/op-env
 _task_done
+
+__task "Configuring sudo cache timeout for AUR builds"
+printf 'Defaults timestamp_timeout=60\n' | sudo tee /etc/sudoers.d/timeout > /dev/null
+sudo chmod 0440 /etc/sudoers.d/timeout
+_task_done
+
+__task "Configuring NOPASSWD for pacman (required for AUR builds)"
+printf '%s ALL=(ALL) NOPASSWD: /usr/bin/pacman\n' "$USER" | sudo tee /etc/sudoers.d/pacman-nopasswd > /dev/null
+sudo chmod 0440 /etc/sudoers.d/pacman-nopasswd
+_task_done
+
+rm -f $VAULT_SECRET_FILE
 echo "Running 'ansible-playbook $DOTFILES_DIR/main'"
-ansible-playbook "$DOTFILES_DIR/main.yml" --flush-cache "${REMAINING_ARGS[@]}" 
+if [[ -n "$OP_SERVICE_ACCOUNT_TOKEN" ]]; then
+  sudo ansible-playbook "$DOTFILES_DIR/main.yml" --flush-cache "${REMAINING_ARGS[@]}"
+else
+  # Interactive op session: export OP_CONFIG_DIR so sudo/ansible tasks find session tokens
+  export OP_CONFIG_DIR="${HOME}/.config/op"
+  sudo --preserve-env=OP_CONFIG_DIR ansible-playbook "$DOTFILES_DIR/main.yml" --flush-cache "${REMAINING_ARGS[@]}"
+fi
 
 popd 2>&1 > /dev/null
 

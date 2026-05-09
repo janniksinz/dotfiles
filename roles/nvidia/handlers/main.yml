@@ -1,0 +1,12 @@
+---
+- name: rebuild initramfs
+  become: true
+  ansible.builtin.command:
+    cmd: mkinitcpio -P
+  listen: rebuild initramfs
+
+- name: reload udev rules
+  become: true
+  ansible.builtin.shell:
+    cmd: udevadm control --reload-rules && udevadm trigger
+  listen: reload udev rules

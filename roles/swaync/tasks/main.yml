@@ -1,0 +1,28 @@
+---
+- name: Skip on WSL
+  ansible.builtin.meta: end_role
+  when: ansible_host_environment_is_wsl | default(false) | bool
+
+- name: Install swaync
+  become: true
+  community.general.pacman:
+    name: "{{ swaync_packages }}"
+    state: present
+
+- name: Ensure swaync config directory exists
+  ansible.builtin.file:
+    path: "{{ user_home }}/.config/swaync"
+    state: directory
+    mode: "0755"
+
+- name: Deploy swaync config
+  ansible.builtin.copy:
+    src: config.json
+    dest: "{{ user_home }}/.config/swaync/config.json"
+    mode: "0644"
+
+- name: Deploy swaync style
+  ansible.builtin.copy:
+    src: style.css
+    dest: "{{ user_home }}/.config/swaync/style.css"
+    mode: "0644"

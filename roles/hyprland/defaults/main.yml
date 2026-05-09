@@ -1,0 +1,22 @@
+---
+hyprland_packages:
+  - hyprland
+  - hyprlock
+  - hyprshot
+  - xdg-desktop-portal-hyprland
+  - xdg-desktop-portal
+  - polkit-kde-agent
+  - xorg-xwayland
+  - wl-clip-persist
+  - cliphist
+  - grim
+  - slurp
+  - uwsm
+  - qt5-wayland
+  - qt6-wayland
+  - dolphin
+
+hyprland_monitor: ",3840x2160@144,auto,auto"
+hyprland_terminal: kitty
+hyprland_file_manager: dolphin
+hyprland_menu: "rofi -show drun"

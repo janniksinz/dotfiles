@@ -1,0 +1,63 @@
+---
+- name: Skip on WSL
+  ansible.builtin.meta: end_role
+  when: ansible_host_environment_is_wsl | default(false) | bool
+
+- name: Install network packages
+  become: true
+  community.general.pacman:
+    name: "{{ network_packages }}"
+    state: present
+
+- name: Enable NetworkManager
+  become: true
+  ansible.builtin.systemd:
+    name: NetworkManager.service
+    enabled: true
+    state: started
+
+- name: Install bluetooth packages
+  become: true
+  community.general.pacman:
+    name: "{{ network_bluetooth_packages }}"
+    state: present
+  when: network_bluetooth
+
+- name: Check if bluetooth service exists
+  ansible.builtin.stat:
+    path: /usr/lib/systemd/system/bluetooth.service
+  register: bluetooth_unit
+  when: network_bluetooth
+
+- name: Enable bluetooth service
+  become: true
+  ansible.builtin.systemd:
+    name: bluetooth.service
+    enabled: true
+    state: started
+  when:
+    - network_bluetooth
+    - bluetooth_unit.stat.exists | default(false)
+
+- name: Install firewall packages
+  become: true
+  community.general.pacman:
+    name: "{{ network_firewall_packages }}"
+    state: present
+  when: network_firewall
+
+- name: Check if firewalld service exists
+  ansible.builtin.stat:
+    path: /usr/lib/systemd/system/firewalld.service
+  register: firewalld_unit
+  when: network_firewall
+
+- name: Enable firewalld
+  become: true
+  ansible.builtin.systemd:
+    name: firewalld.service
+    enabled: true
+    state: started
+  when:
+    - network_firewall
+    - firewalld_unit.stat.exists | default(false)

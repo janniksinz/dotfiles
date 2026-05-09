@@ -1,0 +1,19 @@
+---
+- name: Install neovim packages
+  become: true
+  community.general.pacman:
+    name: "{{ neovim_packages }}"
+    state: present
+
+- name: Ensure neovim config directory exists
+  ansible.builtin.file:
+    path: "{{ user_home }}/.config/nvim"
+    state: directory
+    mode: "0755"
+
+- name: Clone kickstart.nvim
+  ansible.builtin.git:
+    repo: https://github.com/nvim-lua/kickstart.nvim.git
+    dest: "{{ user_home }}/.config/nvim"
+    version: master
+    update: false

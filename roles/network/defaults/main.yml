@@ -1,0 +1,16 @@
+---
+network_packages:
+  - networkmanager
+  - network-manager-applet
+  - wireless_tools
+  - iwd
+
+network_bluetooth_packages:
+  - bluez
+  - bluez-utils
+
+network_firewall_packages:
+  - firewalld
+
+network_bluetooth: true
+network_firewall: true

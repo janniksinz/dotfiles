@@ -1,0 +1,22 @@
+---
+- name: Skip on WSL
+  ansible.builtin.meta: end_role
+  when: ansible_host_environment_is_wsl | default(false) | bool
+
+- name: Install rofi-wayland
+  become: true
+  community.general.pacman:
+    name: "{{ rofi_packages }}"
+    state: present
+
+- name: Ensure rofi config directory exists
+  ansible.builtin.file:
+    path: "{{ user_home }}/.config/rofi"
+    state: directory
+    mode: "0755"
+
+- name: Deploy rofi config
+  ansible.builtin.copy:
+    src: config.rasi
+    dest: "{{ user_home }}/.config/rofi/config.rasi"
+    mode: "0644"
