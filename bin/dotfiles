@@ -373,13 +373,18 @@ case $dotfiles_os in
     ;;
 esac
 
+GIT_CMD="git"
+if [[ -n "$SUDO_USER" ]]; then
+  GIT_CMD="sudo -u $SUDO_USER git"
+fi
+
 if ! [[ -d "$DOTFILES_DIR" ]]; then
   __task "Downloading dotfiles repository (This may take a minute)"
-  _cmd "git clone --quiet https://github.com/janniksinz/dotfiles.git $DOTFILES_DIR"
+  _cmd "$GIT_CMD clone --quiet https://github.com/janniksinz/dotfiles.git $DOTFILES_DIR"
   _task_done
 else
   __task "Updating dotfiles repository"
-  _cmd "git -C $DOTFILES_DIR pull --quiet"
+  _cmd "$GIT_CMD -C $DOTFILES_DIR pull --quiet"
   _task_done
 fi
 
