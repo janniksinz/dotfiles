@@ -235,8 +235,6 @@ function arch_setup() {
     rm -rf "$tmp_dir"
   fi
 
-  __task "Setting Locale"
-  _cmd "sudo localectl set-locale LANG=en_US.UTF-8"
 }
 ###
 
