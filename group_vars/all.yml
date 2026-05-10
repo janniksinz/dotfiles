@@ -51,10 +51,22 @@ default_roles:
   # === Applications ===
   - brave
   - chrome
+  - teams
   - spotify
   - obs
+  - libreoffice
+  - bruno
+  - swayimg
   - zathura
   - tldr
+
+  # === CLI Tools ===
+  - btop
+  - dust
+  - ripgrep
+
+  # === System ===
+  - blueman
 
   # === Security & Auth ===
   - ssh

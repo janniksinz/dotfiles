@@ -1,0 +1,8 @@
+---
+- name: Install Bruno API client
+  kewlfft.aur.aur:
+    name: bruno-bin
+    use: yay
+    state: present
+  become: "{{ ansible_user_id == 'root' }}"
+  become_user: "{{ host_user }}"

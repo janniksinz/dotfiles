@@ -1,0 +1,16 @@
+---
+- name: Install Microsoft Teams
+  kewlfft.aur.aur:
+    name: teams-for-linux
+    use: yay
+    state: present
+  become: "{{ ansible_user_id == 'root' }}"
+  become_user: "{{ host_user }}"
+
+- name: Deploy Teams Wayland flags
+  ansible.builtin.copy:
+    content: |
+      --enable-features=WaylandLinuxDrmSyncobj
+      --ozone-platform-hint=auto
+    dest: "{{ user_home }}/.config/teams-for-linux-flags.conf"
+    mode: "0644"

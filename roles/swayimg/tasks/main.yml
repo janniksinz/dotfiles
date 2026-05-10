@@ -1,0 +1,6 @@
+---
+- name: Install swayimg
+  become: true
+  community.general.pacman:
+    name: swayimg
+    state: present

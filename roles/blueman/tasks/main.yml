@@ -1,0 +1,10 @@
+---
+- name: Skip on WSL
+  ansible.builtin.meta: end_role
+  when: ansible_host_environment_is_wsl | default(false) | bool
+
+- name: Install blueman
+  become: true
+  community.general.pacman:
+    name: blueman
+    state: present
