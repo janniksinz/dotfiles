@@ -16,7 +16,7 @@
     cmd: "go install {{ item.package }}"
   environment:
     GOPATH: "{{ user_home }}/go"
-    PATH: "{{ ansible_env.PATH }}:{{ user_home }}/go/bin"
+    PATH: "{{ ansible_facts['env']['PATH'] }}:{{ user_home }}/go/bin"
   loop: "{{ go_tools }}"
   register: go_tool_result
   changed_when: false
