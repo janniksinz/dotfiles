@@ -2,6 +2,23 @@
 {% if op_installed | default(false) %}
 [user]
     name = {{ git_user_name }}
+{% if git_work_email_result is defined and git_work_email_result.stdout is defined and git_work_email_result.stdout | length > 0 %}
+    email = {{ git_work_email_result.stdout }}
+{% endif %}
+{% if git_signing and git_work_signing_key_result is defined and git_work_signing_key_result.stdout is defined and git_work_signing_key_result.stdout | length > 0 %}
+    signingkey = {{ git_work_signing_key_result.stdout }}
+{% endif %}
+{% endif %}
+
+{% if git_signing %}
+[gpg]
+    format = ssh
+
+[gpg "ssh"]
+    program = /opt/1Password/op-ssh-sign
+
+[commit]
+    gpgsign = true
 {% endif %}
 
 [credential "https://git.mbos.cloud"]

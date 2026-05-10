@@ -1,0 +1,8 @@
+{% for key in op.ssh.agent_keys %}
+[[ssh-keys]]
+vault = "{{ key.vault }}"
+item = "{{ key.item }}"
+
+{% endfor %}
+[[ssh-keys]]
+vault = "Private"

@@ -19,6 +19,18 @@
     dest: "{{ user_home }}/.ssh/config"
     mode: "0600"
 
+- name: Ensure 1Password SSH agent config directory exists
+  ansible.builtin.file:
+    path: "{{ user_home }}/.config/1Password/ssh"
+    state: directory
+    mode: "0700"
+
+- name: Deploy 1Password SSH agent config
+  ansible.builtin.template:
+    src: agent.toml.j2
+    dest: "{{ user_home }}/.config/1Password/ssh/agent.toml"
+    mode: "0600"
+
 - name: Get SSH public key from 1Password
   ansible.builtin.command:
     cmd: "op read '{{ op.ssh.personal[0].vault_path }}' --force"

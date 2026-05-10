@@ -90,6 +90,13 @@ op:
     personal:
       - name: id_ed25519
         vault_path: "op://api_keys/Github SSH Key/public key"
+    agent_keys:
+      - vault: api_keys
+        item: "Github SSH Key"
+      - vault: api_keys
+        item: "Github Signing Key"
+      - vault: MCB
+        item: "MB Gitlab SSH (git.swf.i)"
 
 git_profiles:
   - name: personal
