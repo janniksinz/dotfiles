@@ -14,12 +14,12 @@ default_roles:
   - base
   - fonts
   - swap
-  - nvidia
+  #- nvidia
   - audio
   - network
 
   # === Desktop Environment ===
-  - sddm
+  #- sddm
   - hyprland
   - waybar
   - swaync
@@ -59,7 +59,7 @@ default_roles:
   # === Security & Auth ===
   - ssh
   - 1password
-  - gcm
+  #- gcm
   - gnome-keyring
   - claude
 

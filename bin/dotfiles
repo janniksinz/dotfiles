@@ -403,6 +403,10 @@ while [[ $# -gt 0 ]]; do
       DELETE_ROLE="$2"
       shift 2
       ;;
+    --bootstrap)
+      BOOTSTRAP_MODE=true
+      shift
+      ;;
     *)
       REMAINING_ARGS+=("$1")
       shift
@@ -520,6 +524,25 @@ if [[ -n "$DELETE_ROLE" ]]; then
 fi
 
 update_ansible_galaxy
+
+# Handle bootstrap mode (no 1Password required)
+if [[ "$BOOTSTRAP_MODE" == "true" ]]; then
+  __task "Running bootstrap playbook (no 1Password required)"
+  _task_done
+  ansible-playbook "$DOTFILES_DIR/bootstrap.yml" --ask-become-pass "${REMAINING_ARGS[@]}"
+  popd 2>&1 > /dev/null
+  echo ""
+  echo -e "${CHECK_MARK} ${CAT_GREEN}Pre-setup complete!${NC}"
+  echo ""
+  echo -e "${ARROW} ${CAT_TEAL}Next steps:${NC}"
+  echo -e "   1. Reboot: ${CAT_LAVENDER}sudo reboot${NC}"
+  echo -e "   2. Log in via SDDM, open Brave"
+  echo -e "   3. Sign into 1Password"
+  echo -e "   4. Authenticate CLI: ${CAT_LAVENDER}op signin${NC}"
+  echo -e "   5. Run full setup: ${CAT_LAVENDER}dotfiles${NC}"
+  echo ""
+  exit 0
+fi
 
 confirmVaultAccess
 

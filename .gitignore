@@ -10,3 +10,4 @@ roles/neovim/files/lazy-lock.json
 # Crush directory
 .crush/
 *lampson.md
+become*

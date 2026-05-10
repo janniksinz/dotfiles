@@ -1,0 +1,255 @@
+---
+- name: Pre-Setup - Prepare system for 1Password authentication
+  hosts: localhost
+  connection: local
+
+  vars:
+    host_user: "wednesday"
+    user_home: "/home/{{ host_user }}"
+
+  pre_tasks:
+    - name: Verify running on Arch Linux
+      ansible.builtin.assert:
+        that: ansible_facts['os_family'] == 'Archlinux'
+        fail_msg: "This bootstrap playbook only supports Arch Linux"
+
+    - name: Check if kewlfft.aur collection is installed
+      ansible.builtin.command:
+        cmd: ansible-galaxy collection list kewlfft.aur
+      register: aur_collection_check
+      changed_when: false
+      failed_when: false
+
+    - name: Install ansible-galaxy requirements
+      ansible.builtin.command:
+        cmd: ansible-galaxy collection install -r requirements.yml
+      when: aur_collection_check.rc != 0
+      changed_when: true
+
+  tasks:
+    # === PHASE 1: yay (AUR helper) ===
+    - name: Install base-devel and git
+      become: true
+      community.general.pacman:
+        name:
+          - base-devel
+          - git
+        state: present
+
+    - name: Check if yay is installed
+      ansible.builtin.command:
+        cmd: which yay
+      register: yay_check
+      changed_when: false
+      failed_when: false
+
+    - name: Install yay-bin from AUR
+      when: yay_check.rc != 0
+      block:
+        - name: Create temp directory for yay build
+          ansible.builtin.tempfile:
+            state: directory
+          register: yay_tmp
+
+        - name: Clone yay-bin repository
+          ansible.builtin.git:
+            repo: https://aur.archlinux.org/yay-bin.git
+            dest: "{{ yay_tmp.path }}/yay-bin"
+            depth: 1
+
+        - name: Build and install yay-bin
+          ansible.builtin.command:
+            cmd: makepkg -si --noconfirm
+            chdir: "{{ yay_tmp.path }}/yay-bin"
+
+        - name: Remove temp directory
+          ansible.builtin.file:
+            path: "{{ yay_tmp.path }}"
+            state: absent
+
+    # === PHASE 2: gnome-keyring ===
+    - name: Install gnome-keyring packages
+      become: true
+      community.general.pacman:
+        name:
+          - gnome-keyring
+          - libsecret
+          - seahorse
+        state: present
+
+    - name: Ensure PAM gnome-keyring auth line in SDDM
+      become: true
+      ansible.builtin.lineinfile:
+        path: /etc/pam.d/sddm
+        regexp: '^\-?auth\s+optional\s+pam_gnome_keyring\.so'
+        line: "-auth       optional    pam_gnome_keyring.so"
+        insertafter: '^auth\s+include\s+system-login'
+
+    - name: Ensure PAM gnome-keyring password line in SDDM
+      become: true
+      ansible.builtin.lineinfile:
+        path: /etc/pam.d/sddm
+        regexp: '^\-?password\s+optional\s+pam_gnome_keyring\.so'
+        line: "-password   optional    pam_gnome_keyring.so    use_authtok"
+        insertafter: '^password\s+include\s+system-login'
+
+    - name: Ensure PAM gnome-keyring session line in SDDM
+      become: true
+      ansible.builtin.lineinfile:
+        path: /etc/pam.d/sddm
+        regexp: '^\-?session\s+optional\s+pam_gnome_keyring\.so'
+        line: "-session    optional    pam_gnome_keyring.so    auto_start"
+        insertafter: '^session\s+include\s+system-login'
+
+    - name: Ensure Hyprland modules directory exists
+      ansible.builtin.file:
+        path: "{{ user_home }}/.config/hypr/modules"
+        state: directory
+        mode: "0755"
+
+    - name: Start gnome-keyring-daemon in Hyprland session
+      ansible.builtin.lineinfile:
+        path: "{{ user_home }}/.config/hypr/modules/env.conf"
+        regexp: '^exec-once\s*=.*gnome-keyring-daemon'
+        line: "exec-once = gnome-keyring-daemon --start --components=secrets,pkcs11"
+        create: true
+        mode: "0644"
+
+    # === PHASE 3: Brave browser ===
+    - name: Install Brave browser (AUR)
+      kewlfft.aur.aur:
+        name: brave-bin
+        use: yay
+        state: present
+      become: "{{ ansible_facts['user_id'] == 'root' }}"
+      become_user: "{{ host_user }}"
+
+    - name: Deploy Brave Wayland flags
+      ansible.builtin.copy:
+        content: |
+          --enable-features=WaylandLinuxDrmSyncobj
+          --ozone-platform-hint=auto
+        dest: "{{ user_home }}/.config/brave-flags.conf"
+        mode: "0644"
+
+    # === PHASE 4: 1Password ===
+    - name: Install 1Password GUI (AUR)
+      kewlfft.aur.aur:
+        name: 1password
+        use: yay
+        state: present
+      become: "{{ ansible_facts['user_id'] == 'root' }}"
+      become_user: "{{ host_user }}"
+
+    - name: Install 1Password CLI (AUR)
+      kewlfft.aur.aur:
+        name: 1password-cli
+        use: yay
+        state: present
+      become: "{{ ansible_facts['user_id'] == 'root' }}"
+      become_user: "{{ host_user }}"
+
+    - name: Ensure 1Password SSH agent socket directory exists
+      ansible.builtin.file:
+        path: "{{ user_home }}/.1password"
+        state: directory
+        mode: "0700"
+
+    - name: Ensure 1Password config directory exists
+      ansible.builtin.file:
+        path: "{{ user_home }}/.config/op"
+        state: directory
+        mode: "0700"
+
+    # === PHASE 5: Sudoers for main playbook ===
+    - name: Configure sudoers to preserve OP credentials
+      become: true
+      ansible.builtin.copy:
+        content: |
+          Defaults env_keep += "OP_SERVICE_ACCOUNT_TOKEN"
+          Defaults env_keep += "OP_CONFIG_DIR"
+        dest: /etc/sudoers.d/op-env
+        owner: root
+        group: root
+        mode: "0440"
+        validate: "visudo -cf %s"
+
+    - name: Configure NOPASSWD for pacman (needed for AUR builds)
+      become: true
+      ansible.builtin.copy:
+        content: |
+          {{ host_user }} ALL=(ALL) NOPASSWD: /usr/bin/pacman
+          Defaults:{{ host_user }} !requiretty
+        dest: /etc/sudoers.d/pacman-nopasswd
+        owner: root
+        group: root
+        mode: "0440"
+        validate: "visudo -cf %s"
+
+  post_tasks:
+    - name: Verify gnome-keyring-daemon is running
+      ansible.builtin.command:
+        cmd: pgrep -x gnome-keyring-d
+      register: keyring_proc
+      changed_when: false
+      failed_when: false
+
+    - name: Check if login keyring exists
+      ansible.builtin.stat:
+        path: "{{ user_home }}/.local/share/keyrings/login.keyring"
+      register: login_keyring
+
+    - name: Ensure keyrings directory exists
+      ansible.builtin.file:
+        path: "{{ user_home }}/.local/share/keyrings"
+        state: directory
+        mode: "0700"
+      when: not login_keyring.stat.exists
+
+    - name: Create login keyring with user password
+      ansible.builtin.shell: |
+        echo -n "{{ ansible_become_password }}" | gnome-keyring-daemon --unlock
+      environment:
+        DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ ansible_facts['user_uid'] }}/bus"
+      no_log: true
+      when: not login_keyring.stat.exists
+      changed_when: true
+      failed_when: false
+
+    - name: Verify secret-tool can store and retrieve
+      ansible.builtin.shell: |
+        secret-tool store --label="dotfiles-bootstrap-test" dotfiles-bootstrap test <<< "ok" && \
+        secret-tool lookup dotfiles-bootstrap test && \
+        secret-tool clear dotfiles-bootstrap test
+      register: secret_tool_check
+      changed_when: false
+      failed_when: false
+
+    - name: Keyring verification results
+      ansible.builtin.debug:
+        msg: |
+          === Keyring Verification ===
+          gnome-keyring-daemon running: {{ 'YES' if keyring_proc.rc == 0 else 'NO (will start after reboot via SDDM PAM)' }}
+          login keyring exists:          {{ 'YES' if login_keyring.stat.exists else 'NO — reboot and log in via SDDM to create it (PAM auto-creates on first graphical login)' }}
+          secret-tool store/retrieve:   {{ 'OK' if secret_tool_check.rc == 0 else 'FAIL (expected if keyring not yet running — reboot required)' }}
+          DBUS_SESSION_BUS_ADDRESS:      {{ ansible_facts.env.DBUS_SESSION_BUS_ADDRESS | default('not set') }}
+          ============================
+          {% if not login_keyring.stat.exists %}
+          WARNING: No login keyring found. Brave will prompt for a master key until
+          you log in via SDDM (which triggers PAM to create and auto-unlock the login keyring).
+          {% else %}
+          Brave will use the keyring automatically when gnome-keyring-daemon is running.
+          {% endif %}
+
+    - name: Bootstrap complete
+      ansible.builtin.debug:
+        msg: |
+          ========================================
+          Pre-setup complete! Next steps:
+          1. Reboot: sudo reboot
+          2. Log in via SDDM (gnome-keyring auto-unlocks)
+          3. Open Brave browser
+          4. Sign into 1Password
+          5. Authenticate CLI: op signin
+          6. Run full setup: dotfiles
+          ========================================

@@ -9,16 +9,28 @@ Ansible-based dotfiles for Arch Linux + Hyprland + Nvidia.
 Use `archinstall` with:
 - Filesystem: ext4 (or btrfs)
 - Swap: 8GB partition
-- Desktop: none (minimal)
+- Desktop: Hyprland (minimal)
 - Network: NetworkManager
 
-### 2. Install 1Password CLI
+### 2. Pre-setup (no secrets needed)
 
 ```bash
-sudo pacman -S 1password-cli
+bash <(curl -fsSL https://raw.githubusercontent.com/janniksinz/dotfiles/main/bin/dotfiles) --bootstrap
 ```
 
-### 3. Sign in to 1Password
+This installs and configures the auth dependency chain:
+- **gnome-keyring** — OS keyring with PAM auto-unlock and Hyprland session integration
+- **Brave browser** — needed to sign into 1Password
+- **1Password** (GUI + CLI) — secret management for the main playbook
+- **yay** — AUR helper for package installation
+- Sudoers configuration for the main playbook
+
+### 3. Sign into 1Password
+
+Reboot so gnome-keyring auto-unlocks via SDDM, then:
+1. Open Brave browser
+2. Sign into 1Password (browser or GUI app)
+3. Authenticate the CLI:
 
 ```bash
 op signin
@@ -26,39 +38,23 @@ op signin
 
 Required vaults: `api_keys`, `MCB`.
 
-### 4. Run bootstrap
+### 4. Run full setup
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/janniksinz/dotfiles/main/bin/dotfiles) \
-  -e '{"exclude_roles": ["nvidia","swap","sddm"]}'
+~/.dotfiles/bin/dotfiles -e '{"exclude_roles": ["nvidia","swap","sddm"]}'
 ```
 
-The bootstrap script will:
-- Install Ansible, yay, and dependencies
-- Configure sudoers (OP token passthrough, `pacman` NOPASSWD for AUR builds)
-- Install Ansible Galaxy collections
-- Clone this repo to `~/.dotfiles`
-- Run the full playbook
+Nvidia, swap, and sddm are excluded on the first run — they require a reboot.
 
-Nvidia, swap, and sddm are excluded on the first run — they require a reboot with the full system in place.
+### 5. Run remaining roles
 
-### 5. Reboot
-
-```bash
-reboot
-```
-
-### 6. Run remaining roles
+After reboot:
 
 ```bash
 ~/.dotfiles/bin/dotfiles
 ```
 
-This runs the full playbook including nvidia, swap, and sddm.
-
-### 7. Reboot again
-
-Required for nvidia kernel modules and sddm to take effect.
+This runs the full playbook including nvidia, swap, and sddm. Reboot again for nvidia kernel modules and sddm to take effect.
 
 ---
 
@@ -84,6 +80,36 @@ To exclude specific roles:
 
 Edit `group_vars/all.yml` to enable/disable roles or change settings.
 
+## Verification
+
+### Keyring + Brave
+
+After logging in via SDDM, verify Brave is using gnome-keyring:
+
+```bash
+secret-tool search --all xdg:schema chrome_libsecret_os_crypt_password_v2
+```
+
+You should see `label = Brave Safe Storage` with a secret value. If missing, Brave is not using the OS keyring.
+
+Full keyring health check:
+
+```bash
+# gnome-keyring-daemon running?
+pgrep -x gnome-keyring-d
+
+# Login keyring exists?
+ls ~/.local/share/keyrings/login.keyring
+
+# D-Bus session available?
+echo $DBUS_SESSION_BUS_ADDRESS
+
+# Store and retrieve a test secret
+secret-tool store --label="test" test-key test-val <<< "hello"
+secret-tool lookup test-key test-val
+secret-tool clear test-key test-val
+```
+
 ## Notes
 
 - If upgrading from a system with `hyprland-git` / `hyprutils-git` etc., remove them first:
@@ -91,5 +117,4 @@ Edit `group_vars/all.yml` to enable/disable roles or change settings.
   sudo pacman -Rdd hyprutils-git hyprlang-git hyprgraphics-git hyprwayland-scanner-git
   sudo pacman -Syu
   ```
-- 1Password GUI must be installed separately (not managed by ansible)
-- `op signin` must be run before every fresh bootstrap (session expires)
+- `op signin` must be run before every fresh run (session expires)
