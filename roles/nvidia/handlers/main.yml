@@ -10,3 +10,10 @@
   ansible.builtin.shell:
     cmd: udevadm control --reload-rules && udevadm trigger
   listen: reload udev rules
+
+- name: restart journald
+  become: true
+  ansible.builtin.systemd:
+    name: systemd-journald
+    state: restarted
+  listen: restart journald

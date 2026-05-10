@@ -9,12 +9,13 @@
     name: "{{ nvidia_packages }}"
     state: present
 
-- name: Install 32-bit nvidia libs for gaming
+- name: Install 32-bit nvidia/vulkan libs for gaming
   become: true
   community.general.pacman:
     name:
       - lib32-nvidia-utils
       - lib32-opencl-nvidia
+      - lib32-vulkan-icd-loader
     state: present
   when: "'gaming' in (default_roles | default([]))"
 
@@ -55,8 +56,7 @@
       Operation=Upgrade
       Operation=Remove
       Type=Package
-      Target=nvidia-open-dkms
-      Target=nvidia-dkms
+      Target=nvidia-open
       Target=linux
       Target=linux-headers
 
@@ -99,24 +99,64 @@
   loop: "{{ nvidia_services }}"
   when: nvidia_suspend_unit.stat.exists | default(false)
 
-- name: Deploy /etc/environment with nvidia variables
-  become: true
-  ansible.builtin.template:
-    src: environment.j2
-    dest: /etc/environment
-    owner: root
-    group: root
-    mode: "0644"
-    backup: true
-  notify: rebuild initramfs
-
 - name: Deploy hyprland nvidia environment config
-  ansible.builtin.template:
-    src: hypr-env.conf.j2
-    dest: "{{ user_home }}/.config/hypr/modules/env.conf"
+  ansible.builtin.blockinfile:
+    path: "{{ user_home }}/.config/hypr/modules/env.conf"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - nvidia"
+    block: |
+      env = XCURSOR_SIZE,24
+      env = HYPRCURSOR_SIZE,24
+      env = LIBVA_DRIVER_NAME,nvidia
+      env = __GLX_VENDOR_LIBRARY_NAME,nvidia
+      env = NVD_BACKEND,direct
+      env = ELECTRON_OZONE_PLATFORM_HINT,auto
+    create: true
     owner: "{{ host_user }}"
     mode: "0644"
   when: "'hyprland' in (default_roles | default([]))"
+
+- name: Ensure journald config directory exists
+  become: true
+  ansible.builtin.file:
+    path: /etc/systemd/journald.conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Limit journal size (nvidia GSP firmware log spam prevention)
+  become: true
+  ansible.builtin.copy:
+    content: |
+      [Journal]
+      SystemMaxUse=2G
+      SystemMaxFileSize=256M
+    dest: /etc/systemd/journald.conf.d/size.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart journald
+
+- name: Ensure coredump config directory exists
+  become: true
+  ansible.builtin.file:
+    path: /etc/systemd/coredump.conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Limit coredump size (prevent crash loop disk fill)
+  become: true
+  ansible.builtin.copy:
+    content: |
+      [Coredump]
+      MaxUse=1G
+      KeepFree=2G
+    dest: /etc/systemd/coredump.conf.d/limit.conf
+    owner: root
+    group: root
+    mode: "0644"
 
 - name: Verify nvidia modprobe config exists
   ansible.builtin.stat:

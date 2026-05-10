@@ -1,14 +1,14 @@
 ---
-nvidia_driver_package: nvidia-open-dkms
+nvidia_driver_package: nvidia-open
 nvidia_packages:
-  - nvidia-open-dkms
+  - nvidia-open
   - nvidia-utils
   - lib32-nvidia-utils
   - opencl-nvidia
   - libva-nvidia-driver
   - nvidia-settings
   - egl-wayland
-  - linux-headers
+  - vulkan-icd-loader
 
 nvidia_kernel_modules:
   - nvidia
@@ -17,22 +17,13 @@ nvidia_kernel_modules:
   - nvidia_drm
 
 nvidia_modprobe_options:
+  - "options nvidia_drm modeset=1"
   - "options nvidia NVreg_PreserveVideoMemoryAllocations=1"
   - "options nvidia NVreg_TemporaryFilePath=/var/tmp"
-  - "options nvidia_drm modeset=1 fbdev=1"
 
 nvidia_services:
   - nvidia-suspend.service
   - nvidia-hibernate.service
   - nvidia-resume.service
-  - nvidia-persistenced.service
-
-nvidia_environment_vars:
-  LIBVA_DRIVER_NAME: nvidia
-  __GLX_VENDOR_LIBRARY_NAME: nvidia
-  GBM_BACKEND: nvidia-drm
-  NVD_BACKEND: direct
-  ELECTRON_OZONE_PLATFORM_HINT: auto
-  XDG_SESSION_TYPE: wayland
 
 nvidia_power_management: true
