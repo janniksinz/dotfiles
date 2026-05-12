@@ -1,0 +1,19 @@
+[user]
+    name = {{ git_user_name }}
+{% if work_email_result is defined and work_email_result.stdout is defined and work_email_result.stdout | length > 0 %}
+    email = {{ work_email_result.stdout }}
+{% endif %}
+{% if git.signing and work_signing_key_result is defined and work_signing_key_result.stdout is defined and work_signing_key_result.stdout | length > 0 %}
+    signingkey = {{ work_signing_key_result.stdout }}
+{% endif %}
+
+{% if git.signing %}
+[gpg]
+    format = ssh
+
+[gpg "ssh"]
+    program = /opt/1Password/op-ssh-sign
+
+[commit]
+    gpgsign = true
+{% endif %}

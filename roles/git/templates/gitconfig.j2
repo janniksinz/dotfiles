@@ -42,10 +42,5 @@
     gpgsign = true
 {% endif %}
 
-[credential]
-    credentialStore = secretservice
-    helper = /usr/lib/git-credential-manager/git-credential-manager
-    guiPrompt = false
-
 [includeIf "gitdir:~/work/"]
     path = ~/work/.gitconfig

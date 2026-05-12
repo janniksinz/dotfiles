@@ -1,0 +1,71 @@
+---
+- name: Ensure work directory exists
+  ansible.builtin.file:
+    path: "{{ user_home }}/work"
+    state: directory
+    mode: "0755"
+
+- name: Get work email from 1Password
+  ansible.builtin.command:
+    cmd: "op read '{{ git_profiles[1].email_vault }}'"
+  register: work_email_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  no_log: true
+  when: op_installed | default(false)
+
+- name: Get work signing key from 1Password
+  ansible.builtin.command:
+    cmd: "op read '{{ git_profiles[1].signing_key_vault }}'"
+  register: work_signing_key_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  no_log: true
+  when:
+    - op_installed | default(false)
+    - git.signing
+
+- name: Get GitLab client ID from 1Password
+  ansible.builtin.command:
+    cmd: "op read '{{ gcm_work.gitlab_client_id }}'"
+  register: work_gitlab_client_id_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  no_log: true
+  when: op_installed | default(false)
+
+- name: Configure GitLab OAuth provider
+  community.general.git_config:
+    name: "credential.https://{{ gcm_work.git_host }}.provider"
+    file: "{{ user_home }}/.config/git/config"
+    scope: file
+    value: gitlab
+  when: op_installed | default(false)
+
+- name: Configure GitLab OAuth client ID
+  community.general.git_config:
+    name: "credential.https://{{ gcm_work.git_host }}.gitLabDevClientId"
+    file: "{{ user_home }}/.config/git/config"
+    scope: file
+    value: "{{ work_gitlab_client_id_result.stdout }}"
+  when:
+    - op_installed | default(false)
+    - work_gitlab_client_id_result.stdout | default('') | length > 0
+
+- name: Configure GitLab OAuth auth mode
+  community.general.git_config:
+    name: "credential.https://{{ gcm_work.git_host }}.gitLabAuthModes"
+    file: "{{ user_home }}/.config/git/config"
+    scope: file
+    value: browser
+  when: op_installed | default(false)
+
+- name: Deploy work git config
+  ansible.builtin.template:
+    src: gitconfig-work.j2
+    dest: "{{ user_home }}/work/.gitconfig"
+    mode: "0644"
+  when: op_installed | default(false)
