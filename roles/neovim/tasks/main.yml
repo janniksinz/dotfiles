@@ -17,3 +17,19 @@
     dest: "{{ user_home }}/.config/nvim"
     version: master
     update: false
+
+- name: Enable custom plugins loading
+  ansible.builtin.lineinfile:
+    path: "{{ user_home }}/.config/nvim/init.lua"
+    regexp: '^\s*[-]*\s*require .custom\.plugins.'
+    line: "  require 'custom.plugins'"
+
+- name: Deploy custom neovim plugins
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "{{ user_home }}/.config/nvim/lua/custom/plugins/{{ item }}"
+    mode: "0644"
+  loop:
+    - harpoon.lua
+    - codecompanion.lua
+    - remap.lua

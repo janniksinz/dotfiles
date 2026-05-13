@@ -1,7 +1,11 @@
 ---
 neovim_packages:
-  - neovim
-  - tree-sitter-cli
+  - gcc
+  - make
+  - git
   - ripgrep
   - fd
+  - tree-sitter-cli
+  - unzip
+  - neovim
   - xclip
