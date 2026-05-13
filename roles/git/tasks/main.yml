@@ -33,6 +33,13 @@
     - op_installed | default(false)
     - git_signing
 
+- name: Ensure GitHub host key is in known_hosts
+  ansible.builtin.known_hosts:
+    name: github.com
+    key: "{{ item }}"
+    state: present
+  loop: "{{ lookup('pipe', 'ssh-keyscan github.com 2>/dev/null').splitlines() }}"
+
 - name: Deploy git config
   ansible.builtin.template:
     src: gitconfig.j2
