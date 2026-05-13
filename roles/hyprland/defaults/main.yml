@@ -2,6 +2,7 @@
 hyprland_packages:
   - hyprland
   - hyprlock
+  - hypridle
   - hyprshot
   - xdg-desktop-portal-hyprland
   - xdg-desktop-portal

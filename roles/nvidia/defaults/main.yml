@@ -18,7 +18,6 @@ nvidia_kernel_modules:
 
 nvidia_modprobe_options:
   - "options nvidia_drm modeset=1"
-  - "options nvidia NVreg_PreserveVideoMemoryAllocations=1"
   - "options nvidia NVreg_TemporaryFilePath=/var/tmp"
 
 nvidia_services:

@@ -39,7 +39,6 @@
         - nvidia-suspend.service
         - nvidia-hibernate.service
         - nvidia-resume.service
-        - nvidia-persistenced.service
       register: nvidia_services
       changed_when: false
       failed_when: nvidia_services.stdout != "enabled"

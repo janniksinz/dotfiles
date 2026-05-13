@@ -33,3 +33,8 @@
     - harpoon.lua
     - codecompanion.lua
     - remap.lua
+
+- name: Install neovim plugins
+  ansible.builtin.command:
+    cmd: nvim --headless -c 'lua vim.pack.update()' -c 'qa'
+  changed_when: false

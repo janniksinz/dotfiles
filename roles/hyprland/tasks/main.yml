@@ -37,3 +37,9 @@
     src: hyprlock.conf
     dest: "{{ user_home }}/.config/hypr/hyprlock.conf"
     mode: "0644"
+
+- name: Deploy hypridle config
+  ansible.builtin.copy:
+    src: hypridle.conf
+    dest: "{{ user_home }}/.config/hypr/hypridle.conf"
+    mode: "0644"
