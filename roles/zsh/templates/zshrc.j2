@@ -40,6 +40,9 @@ else
 fi
 unset __conda_setup
 
+# Disable builtins that shadow directory names
+disable private
+
 # Aliases
 alias ll='lsd -la'
 alias ls='lsd'
