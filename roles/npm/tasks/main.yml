@@ -16,3 +16,8 @@
     state: directory
     mode: "0755"
 
+- name: Configure npm minimum release age
+  ansible.builtin.command:
+    cmd: npm config set min-release-age=7d
+  changed_when: false
+
