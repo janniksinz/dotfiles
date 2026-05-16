@@ -40,6 +40,7 @@ default_roles:
   - gcm
   - work
   - neovim
+  - vscode
   - lazygit
   - docker
   - gh

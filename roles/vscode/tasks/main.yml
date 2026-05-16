@@ -1,0 +1,8 @@
+---
+- name: Deploy VSCode Wayland flags
+  ansible.builtin.copy:
+    content: |
+      --disable-gpu-sandbox
+      --ozone-platform-hint=auto
+    dest: "{{ user_home }}/.config/code-flags.conf"
+    mode: "0644"
