@@ -26,3 +26,43 @@
     cmd: "{{ conda_install_dir }}/bin/conda init zsh"
   changed_when: false
   when: not conda_installed.stat.exists
+
+- name: Accept Anaconda ToS for default channels
+  ansible.builtin.command:
+    cmd: "{{ conda_install_dir }}/bin/conda tos accept --override-channels --channel {{ item }}"
+  loop:
+    - https://repo.anaconda.com/pkgs/main
+    - https://repo.anaconda.com/pkgs/r
+  changed_when: false
+
+- name: Remove default Anaconda channels
+  ansible.builtin.command:
+    cmd: "{{ conda_install_dir }}/bin/conda config --remove channels defaults"
+  register: remove_defaults
+  changed_when: "'defaults' in remove_defaults.stdout"
+  failed_when: false
+
+- name: Set conda-forge as default channel
+  ansible.builtin.command:
+    cmd: "{{ conda_install_dir }}/bin/conda config --add channels conda-forge"
+  register: add_forge
+  changed_when: "'Warning' not in add_forge.stderr"
+  failed_when: false
+
+- name: Copy data science environment file
+  ansible.builtin.copy:
+    src: ds-env.yml
+    dest: "{{ conda_install_dir }}/ds-env.yml"
+    mode: "0644"
+  register: ds_env_file
+
+- name: Check if data science environment exists
+  ansible.builtin.command:
+    cmd: "{{ conda_install_dir }}/bin/conda env list"
+  register: conda_envs
+  changed_when: false
+
+- name: Create/update data science environment
+  ansible.builtin.command:
+    cmd: "{{ conda_install_dir }}/bin/conda env update -f {{ conda_install_dir }}/ds-env.yml --prune"
+  when: ds_env_file.changed or 'ds' not in conda_envs.stdout

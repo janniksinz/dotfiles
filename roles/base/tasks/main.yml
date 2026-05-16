@@ -111,3 +111,11 @@
       ansible.builtin.file:
         path: "{{ yay_tmp.path }}"
         state: absent
+
+- name: Install JetBrains Toolbox
+  kewlfft.aur.aur:
+    name: jetbrains-toolbox
+    use: yay
+    state: present
+  become: "{{ ansible_facts['user_id'] == 'root' }}"
+  become_user: "{{ host_user }}"

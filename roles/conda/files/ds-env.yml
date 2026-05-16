@@ -1,0 +1,42 @@
+name: ds
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - cuda-version=12.6
+  # Core ML
+  - pytorch
+  - torchvision
+  - torchaudio
+  - numpy
+  - pandas
+  - scipy
+  - scikit-learn
+  # CUDA-dependent (resolved via conda-forge cuda-version constraint)
+  - bitsandbytes
+  - faiss-gpu
+  - flash-attn
+  # Visualization & notebooks
+  - matplotlib
+  - seaborn
+  - notebook
+  - ipykernel
+  # NLP / LLM
+  - transformers
+  - datasets
+  - accelerate
+  - peft
+  - safetensors
+  - sentencepiece
+  - tokenizers
+  - sentence-transformers
+  - einops
+  # Utilities
+  - wandb
+  - pip
+  - pip:
+      - trl
+      - langchain
+      - langchain-community
+      - langchain-huggingface
+      - chromadb
