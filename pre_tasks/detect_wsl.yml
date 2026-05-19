@@ -11,6 +11,7 @@
     executable: /bin/bash
   ignore_errors: true
   changed_when: false
+  check_mode: false
 
 - name: Register WSL State fact
   ansible.builtin.set_fact:

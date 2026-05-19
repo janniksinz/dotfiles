@@ -1,31 +1,21 @@
 ---
-- name: Install git-credential-manager (AUR)
-  kewlfft.aur.aur:
-    name: git-credential-manager
-    use: yay
-    state: present
-  become: "{{ ansible_facts['user_id'] == 'root' }}"
-  become_user: "{{ host_user }}"
-
-- name: Install skia-sharp (GCM UI dependency)
-  become: true
-  community.general.pacman:
-    name: skia-sharp
-    state: present
+- name: Install GCM
+  ansible.builtin.include_tasks:
+    file: "install-{{ 'debian' if ansible_os_family == 'Debian' else 'arch' }}.yml"
 
 - name: Configure GCM credential store
   community.general.git_config:
     name: credential.credentialStore
     file: "{{ user_home }}/.config/git/config"
     scope: file
-    value: secretservice
+    value: "{{ 'wincredman' if ansible_host_environment_is_wsl | default(false) | bool else 'secretservice' }}"
 
 - name: Configure GCM helper path
   community.general.git_config:
     name: credential.helper
     file: "{{ user_home }}/.config/git/config"
     scope: file
-    value: /usr/bin/git-credential-manager
+    value: "{{ '/mnt/c/Program\\ Files/Git/mingw64/bin/git-credential-manager.exe' if ansible_host_environment_is_wsl | default(false) | bool else '/usr/bin/git-credential-manager' }}"
 
 - name: Disable GCM GUI prompts (use browser OAuth directly)
   community.general.git_config:

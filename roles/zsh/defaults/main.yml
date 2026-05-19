@@ -2,6 +2,9 @@
 zsh_packages:
   - zsh
 
+zsh_packages_apt:
+  - zsh
+
 zsh_omz_plugins:
   - git
   - zoxide

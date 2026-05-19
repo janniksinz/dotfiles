@@ -1,0 +1,69 @@
+---
+# ====================================================================
+# DOTFILES CONFIGURATION — WSL Ubuntu (Work PC)
+# ====================================================================
+# Run: dotfiles
+# Selective: dotfiles -t neovim,tmux
+# Check mode: ansible-playbook wsl.yml --check --diff
+
+# --------------------------------------------------------------------
+# ROLE SELECTION
+# --------------------------------------------------------------------
+default_roles:
+  # === Foundation ===
+  - base-wsl
+
+  # === Terminal & Shell ===
+  - zsh
+  - tmux
+  - fzf
+  - bat
+  - lsd
+  - zoxide
+
+  # === Development ===
+  - git
+  - gcm
+  - work
+  - neovim
+  - lazygit
+  - gh
+
+  # === Languages ===
+  - go
+  - python
+  - npm
+
+  # === CLI Tools ===
+  - btop
+  - dust
+  - ripgrep
+  - tldr
+
+  # === Security & Auth ===
+  - ssh
+  - claude
+
+# --------------------------------------------------------------------
+# USER CONFIGURATION
+# --------------------------------------------------------------------
+host_user: "loki"
+user_home: "/home/{{ host_user }}"
+
+# --------------------------------------------------------------------
+# GIT CONFIGURATION
+# --------------------------------------------------------------------
+# No commit signing on WSL — use simple GCM credential flow via Windows
+git_signing: false
+
+git:
+  default_branch: main
+  editor: nvim
+  signing: false
+
+# Extra paths (Go from tarball needs /usr/local/go/bin)
+zsh_extra_paths:
+  - "$HOME/.local/bin"
+  - "/usr/local/go/bin"
+  - "$HOME/go/bin"
+  - "$HOME/.npm-global/bin"

@@ -525,22 +525,43 @@ fi
 
 update_ansible_galaxy
 
+# Detect WSL and select appropriate playbook
+IS_WSL=false
+if grep -qi microsoft /proc/version 2>/dev/null; then
+  IS_WSL=true
+fi
+
 # Handle bootstrap mode (no 1Password required)
 if [[ "$BOOTSTRAP_MODE" == "true" ]]; then
-  __task "Running bootstrap playbook (no 1Password required)"
-  _task_done
-  ansible-playbook "$DOTFILES_DIR/bootstrap.yml" --ask-become-pass "${REMAINING_ARGS[@]}"
-  popd 2>&1 > /dev/null
-  echo ""
-  echo -e "${CHECK_MARK} ${CAT_GREEN}Pre-setup complete!${NC}"
-  echo ""
-  echo -e "${ARROW} ${CAT_TEAL}Next steps:${NC}"
-  echo -e "   1. Reboot: ${CAT_LAVENDER}sudo reboot${NC}"
-  echo -e "   2. Log in via SDDM, open Brave"
-  echo -e "   3. Sign into 1Password"
-  echo -e "   4. Authenticate CLI: ${CAT_LAVENDER}op signin${NC}"
-  echo -e "   5. Run full setup: ${CAT_LAVENDER}dotfiles${NC}"
-  echo ""
+  if [[ "$IS_WSL" == "true" ]]; then
+    __task "Running WSL bootstrap playbook (no 1Password required)"
+    _task_done
+    ansible-playbook "$DOTFILES_DIR/bootstrap-wsl.yml" --ask-become-pass "${REMAINING_ARGS[@]}"
+    popd 2>&1 > /dev/null
+    echo ""
+    echo -e "${CHECK_MARK} ${CAT_GREEN}WSL Pre-setup complete!${NC}"
+    echo ""
+    echo -e "${ARROW} ${CAT_TEAL}Next steps:${NC}"
+    echo -e "   1. Authenticate CLI: ${CAT_LAVENDER}op signin${NC}"
+    echo -e "      (or set OP_SERVICE_ACCOUNT_TOKEN)"
+    echo -e "   2. Run full setup: ${CAT_LAVENDER}dotfiles${NC}"
+    echo ""
+  else
+    __task "Running bootstrap playbook (no 1Password required)"
+    _task_done
+    ansible-playbook "$DOTFILES_DIR/bootstrap.yml" --ask-become-pass "${REMAINING_ARGS[@]}"
+    popd 2>&1 > /dev/null
+    echo ""
+    echo -e "${CHECK_MARK} ${CAT_GREEN}Pre-setup complete!${NC}"
+    echo ""
+    echo -e "${ARROW} ${CAT_TEAL}Next steps:${NC}"
+    echo -e "   1. Reboot: ${CAT_LAVENDER}sudo reboot${NC}"
+    echo -e "   2. Log in via SDDM, open Brave"
+    echo -e "   3. Sign into 1Password"
+    echo -e "   4. Authenticate CLI: ${CAT_LAVENDER}op signin${NC}"
+    echo -e "   5. Run full setup: ${CAT_LAVENDER}dotfiles${NC}"
+    echo ""
+  fi
   exit 0
 fi
 
@@ -551,24 +572,30 @@ printf 'Defaults env_keep += "OP_SERVICE_ACCOUNT_TOKEN"\nDefaults env_keep += "O
 sudo chmod 0440 /etc/sudoers.d/op-env
 _task_done
 
-__task "Configuring sudo cache timeout for AUR builds"
-printf 'Defaults timestamp_timeout=60\n' | sudo tee /etc/sudoers.d/timeout > /dev/null
-sudo chmod 0440 /etc/sudoers.d/timeout
-_task_done
+if [[ "$IS_WSL" == "true" ]]; then
+  PLAYBOOK="wsl.yml"
+else
+  PLAYBOOK="main.yml"
 
-__task "Configuring NOPASSWD for pacman (required for AUR builds)"
-printf '%s ALL=(ALL) NOPASSWD: /usr/bin/pacman\n' "$USER" | sudo tee /etc/sudoers.d/pacman-nopasswd > /dev/null
-sudo chmod 0440 /etc/sudoers.d/pacman-nopasswd
-_task_done
+  __task "Configuring sudo cache timeout for AUR builds"
+  printf 'Defaults timestamp_timeout=60\n' | sudo tee /etc/sudoers.d/timeout > /dev/null
+  sudo chmod 0440 /etc/sudoers.d/timeout
+  _task_done
+
+  __task "Configuring NOPASSWD for pacman (required for AUR builds)"
+  printf '%s ALL=(ALL) NOPASSWD: /usr/bin/pacman\n' "$USER" | sudo tee /etc/sudoers.d/pacman-nopasswd > /dev/null
+  sudo chmod 0440 /etc/sudoers.d/pacman-nopasswd
+  _task_done
+fi
 
 rm -f $VAULT_SECRET_FILE
-echo "Running 'ansible-playbook $DOTFILES_DIR/main'"
+echo "Running 'ansible-playbook $DOTFILES_DIR/$PLAYBOOK'"
 if [[ -n "$OP_SERVICE_ACCOUNT_TOKEN" ]]; then
-  sudo ansible-playbook "$DOTFILES_DIR/main.yml" --flush-cache "${REMAINING_ARGS[@]}"
+  sudo ansible-playbook "$DOTFILES_DIR/$PLAYBOOK" --flush-cache "${REMAINING_ARGS[@]}"
 else
   # Interactive op session: export OP_CONFIG_DIR so sudo/ansible tasks find session tokens
   export OP_CONFIG_DIR="${HOME}/.config/op"
-  sudo --preserve-env=OP_CONFIG_DIR ansible-playbook "$DOTFILES_DIR/main.yml" --flush-cache "${REMAINING_ARGS[@]}"
+  sudo --preserve-env=OP_CONFIG_DIR ansible-playbook "$DOTFILES_DIR/$PLAYBOOK" --flush-cache "${REMAINING_ARGS[@]}"
 fi
 
 popd 2>&1 > /dev/null

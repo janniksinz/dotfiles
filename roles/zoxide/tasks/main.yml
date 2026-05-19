@@ -1,6 +1,4 @@
 ---
 - name: Install zoxide
-  become: true
-  community.general.pacman:
-    name: zoxide
-    state: present
+  ansible.builtin.include_tasks:
+    file: "install-{{ 'debian' if ansible_os_family == 'Debian' else 'arch' }}.yml"

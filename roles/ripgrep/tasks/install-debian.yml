@@ -1,0 +1,6 @@
+---
+- name: Install ripgrep
+  become: true
+  ansible.builtin.apt:
+    name: ripgrep
+    state: present

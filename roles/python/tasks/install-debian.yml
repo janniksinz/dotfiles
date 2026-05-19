@@ -1,0 +1,12 @@
+---
+- name: Install Python packages
+  become: true
+  ansible.builtin.apt:
+    name: "{{ python_packages_apt }}"
+    state: present
+
+- name: Install pipx
+  become: true
+  ansible.builtin.apt:
+    name: pipx
+    state: present

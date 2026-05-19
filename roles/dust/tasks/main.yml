@@ -1,6 +1,4 @@
 ---
 - name: Install dust
-  become: true
-  community.general.pacman:
-    name: dust
-    state: present
+  ansible.builtin.include_tasks:
+    file: "install-{{ 'debian' if ansible_os_family == 'Debian' else 'arch' }}.yml"

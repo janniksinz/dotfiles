@@ -1,6 +1,6 @@
 # dotfiles
 
-Ansible-based dotfiles for Arch Linux + Hyprland + Nvidia.
+Ansible-based dotfiles for Arch Linux + Hyprland + Nvidia, with WSL Ubuntu support.
 
 ## Fresh Install
 
@@ -109,6 +109,50 @@ secret-tool store --label="test" test-key test-val <<< "hello"
 secret-tool lookup test-key test-val
 secret-tool clear test-key test-val
 ```
+
+---
+
+## WSL Ubuntu
+
+### Prerequisites
+
+1. Install 1Password CLI on **Windows**:
+   ```powershell
+   winget install AgileBits.1Password.CLI
+   ```
+2. In 1Password desktop app (Windows): Settings → Developer → enable:
+   - **Integrate with 1Password CLI**
+   - **Use the SSH agent**
+
+### 1. Bootstrap
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/janniksinz/dotfiles/main/bin/dotfiles) --bootstrap
+```
+
+Installs base dev tools + 1Password CLI on Ubuntu.
+
+### 2. Verify 1Password
+
+```bash
+op vault list
+```
+
+Should show vaults without prompting. If not, restart 1Password desktop app and open a new WSL terminal.
+
+### 3. Run full setup
+
+```bash
+~/.dotfiles/bin/dotfiles
+```
+
+To exclude specific roles:
+
+```bash
+~/.dotfiles/bin/dotfiles -e '{"exclude_roles": ["claude"]}'
+```
+
+---
 
 ## Notes
 

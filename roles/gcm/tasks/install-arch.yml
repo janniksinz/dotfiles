@@ -1,0 +1,14 @@
+---
+- name: Install git-credential-manager (AUR)
+  kewlfft.aur.aur:
+    name: git-credential-manager
+    use: yay
+    state: present
+  become: "{{ ansible_facts['user_id'] == 'root' }}"
+  become_user: "{{ host_user }}"
+
+- name: Install skia-sharp (GCM UI dependency)
+  become: true
+  community.general.pacman:
+    name: skia-sharp
+    state: present

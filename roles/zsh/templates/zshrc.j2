@@ -24,21 +24,25 @@ export EDITOR=nvim
 export VISUAL=nvim
 
 # fnm (fast node manager)
-eval "$(fnm env --use-on-cd --shell zsh)"
+if command -v fnm &>/dev/null; then
+    eval "$(fnm env --use-on-cd --shell zsh)"
+fi
 
 # zoxide (smart cd)
 eval "$(zoxide init zsh)"
 
 # Conda
-__conda_setup="$('{{ user_home }}/miniconda3/bin/conda' 'shell.zsh' 'hook' 2>/dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
-elif [ -f "{{ user_home }}/miniconda3/etc/profile.d/conda.sh" ]; then
-    . "{{ user_home }}/miniconda3/etc/profile.d/conda.sh"
-else
-    addToPath "{{ user_home }}/miniconda3/bin"
+if [ -f "{{ user_home }}/miniconda3/bin/conda" ]; then
+    __conda_setup="$('{{ user_home }}/miniconda3/bin/conda' 'shell.zsh' 'hook' 2>/dev/null)"
+    if [ $? -eq 0 ]; then
+        eval "$__conda_setup"
+    elif [ -f "{{ user_home }}/miniconda3/etc/profile.d/conda.sh" ]; then
+        . "{{ user_home }}/miniconda3/etc/profile.d/conda.sh"
+    else
+        addToPath "{{ user_home }}/miniconda3/bin"
+    fi
+    unset __conda_setup
 fi
-unset __conda_setup
 
 # Disable builtins that shadow directory names
 disable private

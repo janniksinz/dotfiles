@@ -1,0 +1,7 @@
+---
+- name: Install tldr via npm
+  become: true
+  community.general.npm:
+    name: tldr
+    global: true
+    state: present

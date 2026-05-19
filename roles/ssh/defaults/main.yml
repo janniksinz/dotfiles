@@ -1,3 +1,6 @@
 ---
 ssh_packages:
   - openssh
+
+ssh_packages_apt:
+  - openssh-client

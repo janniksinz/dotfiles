@@ -1,0 +1,14 @@
+---
+- name: Install bat
+  become: true
+  ansible.builtin.apt:
+    name: bat
+    state: present
+
+- name: Create bat symlink (older Debian/Ubuntu names binary batcat)
+  become: true
+  ansible.builtin.file:
+    src: /usr/bin/batcat
+    dest: /usr/local/bin/bat
+    state: link
+  when: ansible_distribution_version is version('24.04', '<')

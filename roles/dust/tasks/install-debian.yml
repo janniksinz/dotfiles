@@ -1,0 +1,12 @@
+---
+- name: Get latest dust version
+  ansible.builtin.uri:
+    url: https://api.github.com/repos/bootandy/dust/releases/latest
+    return_content: true
+  register: dust_release
+  check_mode: false
+
+- name: Install dust from deb package
+  become: true
+  ansible.builtin.apt:
+    deb: "https://github.com/bootandy/dust/releases/download/{{ dust_release.json.tag_name }}/du-dust_{{ dust_release.json.tag_name | regex_replace('^v', '') }}-1_amd64.deb"

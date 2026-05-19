@@ -1,0 +1,19 @@
+---
+- name: Update apt cache
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install base packages
+  become: true
+  ansible.builtin.apt:
+    name: "{{ base_wsl_packages }}"
+    state: present
+
+- name: Ensure locale is generated
+  become: true
+  ansible.builtin.command:
+    cmd: "locale-gen {{ base_locale }}"
+  register: locale_result
+  changed_when: "'done' in locale_result.stdout"

@@ -1,0 +1,6 @@
+---
+- name: Install SSH packages
+  become: true
+  community.general.pacman:
+    name: "{{ ssh_packages }}"
+    state: present

@@ -1,9 +1,7 @@
 ---
 - name: Install tldr
-  become: true
-  community.general.pacman:
-    name: tldr
-    state: present
+  ansible.builtin.include_tasks:
+    file: "install-{{ 'debian' if ansible_os_family == 'Debian' else 'arch' }}.yml"
 
 - name: Update tldr cache
   ansible.builtin.command:

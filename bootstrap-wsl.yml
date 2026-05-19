@@ -1,0 +1,107 @@
+---
+- name: Pre-Setup WSL - Prepare system for 1Password authentication
+  hosts: localhost
+  connection: local
+
+  vars:
+    host_user: "loki"
+    user_home: "/home/{{ host_user }}"
+
+  pre_tasks:
+    - name: Verify running on Ubuntu/Debian
+      ansible.builtin.assert:
+        that: ansible_facts['os_family'] == 'Debian'
+        fail_msg: "This bootstrap playbook only supports Debian/Ubuntu"
+
+  tasks:
+    # === PHASE 1: Base development tools ===
+    - name: Install base packages
+      become: true
+      ansible.builtin.apt:
+        name:
+          - build-essential
+          - curl
+          - wget
+          - unzip
+          - git
+          - software-properties-common
+          - gnupg
+          - ca-certificates
+        state: present
+
+    # === PHASE 2: 1Password CLI ===
+    - name: Check if 1Password CLI is installed
+      ansible.builtin.command:
+        cmd: which op
+      register: op_check
+      changed_when: false
+      failed_when: false
+
+    - name: Install 1Password CLI
+      when: op_check.rc != 0
+      block:
+        - name: Add 1Password apt signing key
+          become: true
+          ansible.builtin.shell: |
+            curl -sS https://downloads.1password.com/linux/keys/1password.asc | \
+            gpg --dearmor --output /usr/share/keyrings/1password-archive-keyring.gpg
+          args:
+            creates: /usr/share/keyrings/1password-archive-keyring.gpg
+
+        - name: Add 1Password apt repository
+          become: true
+          ansible.builtin.copy:
+            content: |
+              deb [arch=amd64 signed-by=/usr/share/keyrings/1password-archive-keyring.gpg] https://downloads.1password.com/linux/debian/amd64 stable main
+            dest: /etc/apt/sources.list.d/1password.list
+            mode: "0644"
+
+        - name: Add 1Password debsig policy
+          become: true
+          ansible.builtin.shell: |
+            mkdir -p /etc/debsig/policies/AC2D62742012EA22/ && \
+            curl -sS https://downloads.1password.com/linux/debian/debsig/1password.pol | \
+            tee /etc/debsig/policies/AC2D62742012EA22/1password.pol > /dev/null && \
+            mkdir -p /usr/share/debsig/keyrings/AC2D62742012EA22 && \
+            curl -sS https://downloads.1password.com/linux/keys/1password.asc | \
+            gpg --dearmor --output /usr/share/debsig/keyrings/AC2D62742012EA22/debsig.gpg
+          args:
+            creates: /etc/debsig/policies/AC2D62742012EA22/1password.pol
+
+        - name: Install 1Password CLI package
+          become: true
+          ansible.builtin.apt:
+            name: 1password-cli
+            state: present
+            update_cache: true
+
+    # === PHASE 3: Sudoers configuration ===
+    - name: Configure sudoers to preserve OP credentials
+      become: true
+      ansible.builtin.copy:
+        content: |
+          Defaults env_keep += "OP_SERVICE_ACCOUNT_TOKEN"
+          Defaults env_keep += "OP_CONFIG_DIR"
+        dest: /etc/sudoers.d/op-env
+        owner: root
+        group: root
+        mode: "0440"
+        validate: "visudo -cf %s"
+
+  post_tasks:
+    - name: Verify 1Password CLI
+      ansible.builtin.command:
+        cmd: op --version
+      register: op_version
+      changed_when: false
+
+    - name: Bootstrap complete
+      ansible.builtin.debug:
+        msg: |
+          ========================================
+          WSL Pre-setup complete! Next steps:
+          1. Authenticate CLI: op signin
+             (or set OP_SERVICE_ACCOUNT_TOKEN)
+          2. Run full setup: dotfiles
+          ========================================
+          1Password CLI version: {{ op_version.stdout }}

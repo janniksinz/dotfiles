@@ -1,9 +1,7 @@
 ---
 - name: Install SSH packages
-  become: true
-  community.general.pacman:
-    name: "{{ ssh_packages }}"
-    state: present
+  ansible.builtin.include_tasks:
+    file: "install-{{ 'debian' if ansible_os_family == 'Debian' else 'arch' }}.yml"
 
 - name: Ensure .ssh directory exists
   ansible.builtin.file:
@@ -30,6 +28,7 @@
     src: agent.toml.j2
     dest: "{{ user_home }}/.config/1Password/ssh/agent.toml"
     mode: "0600"
+  when: not (ansible_host_environment_is_wsl | default(false) | bool)
 
 - name: Get SSH public key from 1Password
   ansible.builtin.command:

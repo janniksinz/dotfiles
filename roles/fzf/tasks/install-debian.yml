@@ -1,0 +1,6 @@
+---
+- name: Install fzf
+  become: true
+  ansible.builtin.apt:
+    name: fzf
+    state: present

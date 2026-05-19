@@ -1,0 +1,12 @@
+---
+- name: Get latest lsd version
+  ansible.builtin.uri:
+    url: https://api.github.com/repos/lsd-rs/lsd/releases/latest
+    return_content: true
+  register: lsd_release
+  check_mode: false
+
+- name: Install lsd from deb package
+  become: true
+  ansible.builtin.apt:
+    deb: "https://github.com/lsd-rs/lsd/releases/download/{{ lsd_release.json.tag_name }}/lsd_{{ lsd_release.json.tag_name | regex_replace('^v', '') }}_amd64.deb"

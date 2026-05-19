@@ -1,0 +1,6 @@
+---
+- name: Install neovim packages
+  become: true
+  ansible.builtin.apt:
+    name: "{{ neovim_packages_apt }}"
+    state: present

@@ -1,0 +1,6 @@
+---
+- name: Install zsh
+  become: true
+  community.general.pacman:
+    name: "{{ zsh_packages }}"
+    state: present

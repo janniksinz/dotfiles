@@ -1,9 +1,7 @@
 ---
 - name: Install tmux
-  become: true
-  community.general.pacman:
-    name: "{{ tmux_packages }}"
-    state: present
+  ansible.builtin.include_tasks:
+    file: "install-{{ 'debian' if ansible_os_family == 'Debian' else 'arch' }}.yml"
 
 - name: Install TPM
   ansible.builtin.git:

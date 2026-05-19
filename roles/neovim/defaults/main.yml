@@ -9,3 +9,12 @@ neovim_packages:
   - unzip
   - neovim
   - xclip
+
+neovim_packages_apt:
+  - gcc
+  - make
+  - git
+  - ripgrep
+  - fd-find
+  - unzip
+  - neovim

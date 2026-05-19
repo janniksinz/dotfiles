@@ -1,0 +1,13 @@
+---
+base_wsl_packages:
+  - build-essential
+  - curl
+  - wget
+  - unzip
+  - openssh-client
+  - git
+  - ca-certificates
+  - gnupg
+  - locales
+
+base_locale: en_US.UTF-8

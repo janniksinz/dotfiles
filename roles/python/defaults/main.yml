@@ -4,6 +4,11 @@ python_packages:
   - python-pip
   - python-pipx
 
+python_packages_apt:
+  - python3
+  - python3-pip
+  - python3-venv
+
 python_pipx_packages:
   - black
   - ruff

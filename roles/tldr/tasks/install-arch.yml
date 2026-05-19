@@ -1,0 +1,6 @@
+---
+- name: Install tldr
+  become: true
+  community.general.pacman:
+    name: tldr
+    state: present

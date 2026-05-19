@@ -1,0 +1,6 @@
+---
+- name: Install git packages
+  become: true
+  community.general.pacman:
+    name: "{{ git_packages }}"
+    state: present

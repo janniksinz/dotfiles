@@ -1,3 +1,6 @@
 ---
 tmux_packages:
   - tmux
+
+tmux_packages_apt:
+  - tmux

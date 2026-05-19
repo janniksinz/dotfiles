@@ -1,9 +1,7 @@
 ---
 - name: Install neovim packages
-  become: true
-  community.general.pacman:
-    name: "{{ neovim_packages }}"
-    state: present
+  ansible.builtin.include_tasks:
+    file: "install-{{ 'debian' if ansible_os_family == 'Debian' else 'arch' }}.yml"
 
 - name: Ensure neovim config directory exists
   ansible.builtin.file:

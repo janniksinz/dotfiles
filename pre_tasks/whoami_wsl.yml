@@ -11,7 +11,6 @@
 - name: Register Windows Current User
   ansible.builtin.set_fact:
     wsl_host_user: "{{ windows_user.stdout }}"
-  when: host_user is not defined
 
 - name: DEBUG
   ansible.builtin.debug:

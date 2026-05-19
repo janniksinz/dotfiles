@@ -1,9 +1,7 @@
 ---
 - name: Install Go
-  become: true
-  community.general.pacman:
-    name: "{{ go_packages }}"
-    state: present
+  ansible.builtin.include_tasks:
+    file: "install-{{ 'debian' if ansible_os_family == 'Debian' else 'arch' }}.yml"
 
 - name: Ensure GOPATH bin directory exists
   ansible.builtin.file:
@@ -16,7 +14,7 @@
     cmd: "go install {{ item.package }}"
   environment:
     GOPATH: "{{ user_home }}/go"
-    PATH: "{{ ansible_facts['env']['PATH'] }}:{{ user_home }}/go/bin"
+    PATH: "{{ ansible_facts['env']['PATH'] }}:/usr/local/go/bin:{{ user_home }}/go/bin"
   loop: "{{ go_tools }}"
   register: go_tool_result
   changed_when: false

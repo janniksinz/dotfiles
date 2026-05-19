@@ -1,0 +1,6 @@
+---
+- name: Install dust
+  become: true
+  community.general.pacman:
+    name: dust
+    state: present

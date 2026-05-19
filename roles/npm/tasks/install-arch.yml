@@ -1,0 +1,6 @@
+---
+- name: Install Node.js packages
+  become: true
+  community.general.pacman:
+    name: "{{ npm_packages }}"
+    state: present

@@ -1,9 +1,7 @@
 ---
 - name: Install zsh
-  become: true
-  community.general.pacman:
-    name: "{{ zsh_packages }}"
-    state: present
+  ansible.builtin.include_tasks:
+    file: "install-{{ 'debian' if ansible_os_family == 'Debian' else 'arch' }}.yml"
 
 - name: Set zsh as default shell
   become: true

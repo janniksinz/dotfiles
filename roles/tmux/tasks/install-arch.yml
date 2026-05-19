@@ -1,0 +1,6 @@
+---
+- name: Install tmux
+  become: true
+  community.general.pacman:
+    name: "{{ tmux_packages }}"
+    state: present

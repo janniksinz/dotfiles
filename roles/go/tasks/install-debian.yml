@@ -1,0 +1,15 @@
+---
+- name: Get latest Go version
+  ansible.builtin.uri:
+    url: https://go.dev/VERSION?m=text
+    return_content: true
+  register: go_latest
+  check_mode: false
+
+- name: Install Go from official tarball
+  become: true
+  ansible.builtin.unarchive:
+    src: "https://go.dev/dl/{{ go_latest.content.split('\n') | first }}.linux-amd64.tar.gz"
+    dest: /usr/local
+    remote_src: true
+    creates: /usr/local/go/bin/go

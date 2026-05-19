@@ -1,0 +1,11 @@
+---
+# On WSL, GCM runs from Windows — no Linux install needed
+- name: Verify Windows GCM is accessible
+  ansible.builtin.stat:
+    path: "/mnt/c/Program Files/Git/mingw64/bin/git-credential-manager.exe"
+  register: gcm_windows_binary
+
+- name: Warn if Windows GCM not found
+  ansible.builtin.debug:
+    msg: "WARNING: Windows Git Credential Manager not found at expected path. Install Git for Windows."
+  when: not gcm_windows_binary.stat.exists

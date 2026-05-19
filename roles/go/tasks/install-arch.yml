@@ -1,0 +1,6 @@
+---
+- name: Install Go
+  become: true
+  community.general.pacman:
+    name: "{{ go_packages }}"
+    state: present

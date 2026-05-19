@@ -1,0 +1,21 @@
+---
+- name: Add GitHub CLI signing key
+  become: true
+  ansible.builtin.shell: |
+    curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | tee /usr/share/keyrings/githubcli-archive-keyring.gpg > /dev/null
+  args:
+    creates: /usr/share/keyrings/githubcli-archive-keyring.gpg
+
+- name: Add GitHub CLI repository
+  become: true
+  ansible.builtin.copy:
+    content: "deb [arch=amd64 signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main\n"
+    dest: /etc/apt/sources.list.d/github-cli.list
+    mode: "0644"
+
+- name: Install gh
+  become: true
+  ansible.builtin.apt:
+    name: gh
+    state: present
+    update_cache: true
