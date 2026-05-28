@@ -37,6 +37,7 @@
     key: "{{ item }}"
     state: present
   loop: "{{ lookup('pipe', 'ssh-keyscan github.com 2>/dev/null').splitlines() | select('match', '^github\\.com') | list }}"
+  when: not (ansible_host_environment_is_wsl | default(false) | bool)
 
 - name: Deploy git config
   ansible.builtin.template:
