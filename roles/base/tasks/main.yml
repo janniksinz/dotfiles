@@ -112,6 +112,15 @@
         path: "{{ yay_tmp.path }}"
         state: absent
 
+- name: Install base yay packages
+  kewlfft.aur.aur:
+    name: "{{ base_yay_packages }}"
+    use: yay
+    state: present
+  become: "{{ ansible_facts['user_id'] == 'root' }}"
+  become_user: "{{ host_user }}"
+  when: base_yay_packages | length > 0
+
 - name: Install JetBrains Toolbox
   kewlfft.aur.aur:
     name: jetbrains-toolbox

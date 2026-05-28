@@ -18,6 +18,9 @@ base_packages:
 base_locale: en_US.UTF-8
 base_timezone: Europe/Berlin
 
+base_yay_packages:
+  - parsec-bin
+
 pacman_parallel_downloads: 5
 pacman_color: true
 pacman_ilovecandy: true
