@@ -7,7 +7,7 @@
 
 - name: Get work email from 1Password
   ansible.builtin.command:
-    cmd: "op read '{{ git_profiles[1].email_vault }}'"
+    cmd: "{{ op_cmd | default('op') }} read '{{ git_profiles[1].email_vault }}'"
   register: work_email_result
   changed_when: false
   failed_when: false
@@ -17,7 +17,7 @@
 
 - name: Get work signing key from 1Password
   ansible.builtin.command:
-    cmd: "op read '{{ git_profiles[1].signing_key_vault }}'"
+    cmd: "{{ op_cmd | default('op') }} read '{{ git_profiles[1].signing_key_vault }}'"
   register: work_signing_key_result
   changed_when: false
   failed_when: false
@@ -29,7 +29,7 @@
 
 - name: Get GitLab client ID from 1Password
   ansible.builtin.command:
-    cmd: "op read '{{ gcm_work.gitlab_client_id }}'"
+    cmd: "{{ op_cmd | default('op') }} read '{{ gcm_work.gitlab_client_id }}'"
   register: work_gitlab_client_id_result
   changed_when: false
   failed_when: false
@@ -40,14 +40,14 @@
 - name: Configure GitLab OAuth provider
   community.general.git_config:
     name: "credential.https://{{ gcm_work.git_host }}.provider"
-    file: "{{ user_home }}/.config/git/config"
+    file: "{{ user_home }}/.config/git/credentials.conf"
     scope: file
     value: gitlab
 
 - name: Configure GitLab OAuth client ID (from 1Password)
   community.general.git_config:
     name: "credential.https://{{ gcm_work.git_host }}.gitLabDevClientId"
-    file: "{{ user_home }}/.config/git/config"
+    file: "{{ user_home }}/.config/git/credentials.conf"
     scope: file
     value: "{{ work_gitlab_client_id_result.stdout }}"
   when:
@@ -57,7 +57,7 @@
 - name: Configure GitLab OAuth client ID (public fallback)
   community.general.git_config:
     name: "credential.https://{{ gcm_work.git_host }}.gitLabDevClientId"
-    file: "{{ user_home }}/.config/git/config"
+    file: "{{ user_home }}/.config/git/credentials.conf"
     scope: file
     value: "{{ gcm_work_gitlab_client_id_public }}"
   when:
@@ -67,7 +67,7 @@
 - name: Configure GitLab OAuth auth mode
   community.general.git_config:
     name: "credential.https://{{ gcm_work.git_host }}.gitLabAuthModes"
-    file: "{{ user_home }}/.config/git/config"
+    file: "{{ user_home }}/.config/git/credentials.conf"
     scope: file
     value: browser
 

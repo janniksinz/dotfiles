@@ -1,0 +1,16 @@
+---
+repos_dir: "{{ user_home }}/private"
+
+git_repos:
+  - name: compiler
+    url: "https://github.com/janniksinz/compiler.git"
+  - name: grpcui
+    url: "https://github.com/fullstorydev/grpcui"
+  - name: protoss
+    url: "https://git.mbos.cloud/Mercedes-Intelligent-Cloud/codex/protoss"
+  - name: atp-xml
+    url: "https://daimler-mic@dev.azure.com/daimler-mic/tcu-ops/_git/atp-xml"
+    token_vault: "op://MCB/Git Azure DevOps/ATP"
+  - name: atp-core
+    url: "https://daimler-mic@dev.azure.com/daimler-mic/tcu-ops/_git/atp-core"
+    token_vault: "op://MCB/Git Azure DevOps/ATP"

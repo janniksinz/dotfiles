@@ -6,20 +6,20 @@
 - name: Configure GCM credential store
   community.general.git_config:
     name: credential.credentialStore
-    file: "{{ user_home }}/.config/git/config"
+    file: "{{ user_home }}/.config/git/credentials.conf"
     scope: file
     value: "{{ 'wincredman' if ansible_host_environment_is_wsl | default(false) | bool else 'secretservice' }}"
 
 - name: Configure GCM helper path
   community.general.git_config:
     name: credential.helper
-    file: "{{ user_home }}/.config/git/config"
+    file: "{{ user_home }}/.config/git/credentials.conf"
     scope: file
     value: "{{ '/mnt/c/Program\\ Files/Git/mingw64/bin/git-credential-manager.exe' if ansible_host_environment_is_wsl | default(false) | bool else '/usr/bin/git-credential-manager' }}"
 
 - name: Disable GCM GUI prompts (use browser OAuth directly)
   community.general.git_config:
     name: credential.guiPrompt
-    file: "{{ user_home }}/.config/git/config"
+    file: "{{ user_home }}/.config/git/credentials.conf"
     scope: file
     value: "false"

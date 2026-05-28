@@ -11,7 +11,7 @@
 
 - name: Get git email from 1Password
   ansible.builtin.command:
-    cmd: "op read '{{ op.git.user.email }}'"
+    cmd: "{{ op_cmd | default('op') }} read '{{ op.git.user.email }}'"
   register: git_email_result
   changed_when: false
   failed_when: false
@@ -21,7 +21,7 @@
 
 - name: Get git signing key from 1Password
   ansible.builtin.command:
-    cmd: "op read '{{ git_profiles[0].signing_key_vault }}'"
+    cmd: "{{ op_cmd | default('op') }} read '{{ git_profiles[0].signing_key_vault }}'"
   register: git_signing_key_result
   changed_when: false
   failed_when: false

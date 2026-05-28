@@ -7,7 +7,7 @@
 
 - name: Get Claude bearer token from 1Password
   ansible.builtin.command:
-    cmd: "op read '{{ claude_op_bearer_token }}'"
+    cmd: "{{ op_cmd | default('op') }} read '{{ claude_op_bearer_token }}'"
   register: claude_bearer_result
   changed_when: false
   failed_when: false
@@ -17,7 +17,7 @@
 
 - name: Get Claude base URL from 1Password
   ansible.builtin.command:
-    cmd: "op read '{{ claude_op_base_url }}'"
+    cmd: "{{ op_cmd | default('op') }} read '{{ claude_op_base_url }}'"
   register: claude_url_result
   changed_when: false
   failed_when: false

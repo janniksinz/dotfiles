@@ -24,8 +24,14 @@ export EDITOR=nvim
 export VISUAL=nvim
 {% if ansible_host_environment_is_wsl | default(false) | bool %}
 
-# 1Password app integration (WSL)
-export OP_BIOMETRIC_UNLOCK_CIPC=true
+# Corporate proxy (WSL inherits HTTP_PROXY but not HTTPS_PROXY)
+export HTTPS_PROXY="$HTTP_PROXY"
+export https_proxy="$http_proxy"
+export NO_PROXY="localhost,127.0.0.1,*.corpintra.net"
+export no_proxy="$NO_PROXY"
+
+# 1Password app integration (WSL interop)
+alias op="op.exe"
 export SSH_AUTH_SOCK="$HOME/.1password/agent.sock"
 {% endif %}
 

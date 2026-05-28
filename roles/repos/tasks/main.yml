@@ -1,0 +1,55 @@
+---
+- name: Ensure repos directory exists
+  ansible.builtin.file:
+    path: "{{ repos_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Fetch tokens from 1Password
+  ansible.builtin.command:
+    cmd: "{{ op_cmd | default('op') }} read '{{ item.token_vault }}'"
+  register: repo_tokens
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  no_log: true
+  loop: "{{ git_repos | selectattr('token_vault', 'defined') | list | unique(attribute='token_vault') }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: op_installed | default(false)
+
+- name: Build token lookup
+  ansible.builtin.set_fact:
+    repo_token_map: >-
+      {{ repo_token_map | default({}) | combine({item.item.token_vault: item.stdout}) }}
+  loop: "{{ repo_tokens.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.name | default('skip') }}"
+  when:
+    - item is not skipped
+    - item.stdout | default('') | length > 0
+  no_log: true
+
+- name: Clone public repositories
+  ansible.builtin.git:
+    repo: "{{ item.url }}"
+    dest: "{{ repos_dir }}/{{ item.name }}"
+    version: "{{ item.version | default('HEAD') }}"
+    update: "{{ item.update | default(false) }}"
+  loop: "{{ git_repos | rejectattr('token_vault', 'defined') | list }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Clone private repositories (with token)
+  ansible.builtin.git:
+    repo: "https://{{ repo_token_map[item.token_vault] }}@{{ item.url | regex_replace('^https://', '') }}"
+    dest: "{{ repos_dir }}/{{ item.name }}"
+    version: "{{ item.version | default('HEAD') }}"
+    update: "{{ item.update | default(false) }}"
+  loop: "{{ git_repos | selectattr('token_vault', 'defined') | list }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - repo_token_map is defined
+    - repo_token_map[item.token_vault] is defined
+  no_log: true

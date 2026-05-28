@@ -32,7 +32,7 @@
 
 - name: Get SSH public key from 1Password
   ansible.builtin.command:
-    cmd: "op read '{{ op.ssh.personal[0].vault_path }}' --force"
+    cmd: "{{ op_cmd | default('op') }} read '{{ op.ssh.personal[0].vault_path }}' --force"
   register: ssh_pubkey_result
   changed_when: false
   failed_when: false

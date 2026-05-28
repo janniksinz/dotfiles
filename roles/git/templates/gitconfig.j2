@@ -46,5 +46,8 @@
     gpgsign = true
 {% endif %}
 
+[include]
+    path = ~/.config/git/credentials.conf
+
 [includeIf "gitdir:~/work/"]
     path = ~/work/.gitconfig
