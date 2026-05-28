@@ -5,6 +5,10 @@
   vars_files:
     - group_vars/all.yml
     - group_vars/wsl.yml
+  environment:
+    http_proxy: "{{ lookup('env', 'http_proxy') | default(omit, true) }}"
+    https_proxy: "{{ lookup('env', 'http_proxy') | default(omit, true) }}"
+    no_proxy: "localhost,127.0.0.1,*.corpintra.net"
 
   pre_tasks:
     - name: Verify running on Ubuntu/Debian
