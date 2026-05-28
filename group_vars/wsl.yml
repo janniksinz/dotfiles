@@ -14,12 +14,12 @@ default_roles:
   - base-wsl
 
   # === Terminal & Shell ===
-  - zsh
-  - tmux
-  - fzf
   - bat
   - lsd
+  - fzf
   - zoxide
+  - zsh
+  - tmux
 
   # === Development ===
   - git
