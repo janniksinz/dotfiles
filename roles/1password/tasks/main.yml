@@ -41,5 +41,23 @@
     group: root
     mode: "0440"
     validate: "visudo -cf %s"
+  when: not (ansible_host_environment_is_wsl | default(false) | bool)
+
+- name: Configure 1Password CLI for WSL app integration
+  when: ansible_host_environment_is_wsl | default(false) | bool
+  block:
+    - name: Deploy 1Password CLI config for app integration
+      ansible.builtin.copy:
+        content: |
+          [sockets]
+          ssh-agent = "{{ user_home }}/.1password/agent.sock"
+        dest: "{{ user_home }}/.config/op/config"
+        mode: "0600"
+
+    - name: Ensure 1Password SSH agent socket directory exists
+      ansible.builtin.file:
+        path: "{{ user_home }}/.1password"
+        state: directory
+        mode: "0700"
 
 

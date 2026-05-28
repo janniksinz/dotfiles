@@ -1,0 +1,14 @@
+---
+- name: Install docker packages
+  become: true
+  community.general.pacman:
+    name: "{{ docker_packages }}"
+    state: present
+
+- name: Add user to docker group
+  become: true
+  ansible.builtin.user:
+    name: "{{ host_user }}"
+    groups:
+      - docker
+    append: true

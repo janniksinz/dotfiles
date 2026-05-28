@@ -1,0 +1,53 @@
+---
+# ====================================================================
+# DOTFILES CONFIGURATION — Setup Profile (Coworker Onboarding)
+# ====================================================================
+# No 1Password required. GitLab OAuth via GCM browser flow.
+# Run: bash <(curl -s https://raw.githubusercontent.com/janniksinz/dotfiles/main/bin/dotfiles) --profile setup
+
+# --------------------------------------------------------------------
+# ROLE SELECTION
+# --------------------------------------------------------------------
+default_roles:
+  - base-wsl
+  - zsh
+  - tmux
+  - fzf
+  - bat
+  - lsd
+  - zoxide
+  - git
+  - gcm
+  - work
+  - neovim
+  - lazygit
+  - gh
+  - go
+  - python
+  - npm
+  - docker
+  - btop
+  - dust
+  - ripgrep
+  - tldr
+
+# --------------------------------------------------------------------
+# USER CONFIGURATION
+# --------------------------------------------------------------------
+host_user: "{{ ansible_user_id }}"
+user_home: "/home/{{ host_user }}"
+
+# --------------------------------------------------------------------
+# GIT CONFIGURATION
+# --------------------------------------------------------------------
+git:
+  default_branch: main
+  editor: nvim
+  signing: false
+
+git_signing: false
+
+# --------------------------------------------------------------------
+# GITLAB (public client ID — no 1Password needed)
+# --------------------------------------------------------------------
+gcm_work_gitlab_client_id_public: "7947ddff92d2e3a0f062abb29f866ca57cf4acef87f0cb934e219fffed1af060"

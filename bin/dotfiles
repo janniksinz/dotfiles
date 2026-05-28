@@ -391,6 +391,7 @@ pushd "$DOTFILES_DIR" 2>&1 > /dev/null
 # Parse arguments for uninstall/delete
 UNINSTALL_ROLE=""
 DELETE_ROLE=""
+PROFILE=""
 REMAINING_ARGS=()
 
 while [[ $# -gt 0 ]]; do
@@ -406,6 +407,10 @@ while [[ $# -gt 0 ]]; do
     --bootstrap)
       BOOTSTRAP_MODE=true
       shift
+      ;;
+    --profile)
+      PROFILE="$2"
+      shift 2
       ;;
     *)
       REMAINING_ARGS+=("$1")
@@ -529,6 +534,24 @@ update_ansible_galaxy
 IS_WSL=false
 if grep -qi microsoft /proc/version 2>/dev/null; then
   IS_WSL=true
+fi
+
+# Handle profile mode (no 1Password required)
+if [[ -n "$PROFILE" ]]; then
+  PROFILE_PLAYBOOK="$DOTFILES_DIR/${PROFILE}.yml"
+  if [[ ! -f "$PROFILE_PLAYBOOK" ]]; then
+    printf "${CAT_RED} [✗]  ${CAT_TEXT}Profile '${PROFILE}' not found (no ${PROFILE}.yml)${NC}\n"
+    popd 2>&1 > /dev/null
+    exit 1
+  fi
+  __task "Running profile: $PROFILE"
+  _task_done
+  ansible-playbook "$PROFILE_PLAYBOOK" --ask-become-pass "${REMAINING_ARGS[@]}"
+  popd 2>&1 > /dev/null
+  echo ""
+  echo -e "${CHECK_MARK} ${CAT_GREEN}Profile '${PROFILE}' setup complete!${NC}"
+  echo ""
+  exit 0
 fi
 
 # Handle bootstrap mode (no 1Password required)

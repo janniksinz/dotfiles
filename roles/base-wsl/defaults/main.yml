@@ -9,5 +9,6 @@ base_wsl_packages:
   - ca-certificates
   - gnupg
   - locales
+  - socat
 
 base_locale: en_US.UTF-8

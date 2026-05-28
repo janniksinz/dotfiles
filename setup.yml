@@ -1,0 +1,44 @@
+---
+- name: DotFiles Config (Setup Profile)
+  hosts: localhost
+  connection: local
+  vars_files:
+    - group_vars/setup.yml
+
+  pre_tasks:
+    - name: Verify running on Ubuntu/Debian
+      ansible.builtin.assert:
+        that: ansible_facts['os_family'] == 'Debian'
+        fail_msg: "This playbook only supports Debian/Ubuntu"
+      tags:
+        - always
+
+    - name: Detect WSL
+      ansible.builtin.import_tasks: pre_tasks/detect_wsl.yml
+      tags:
+        - always
+
+    - name: Register 1Password as unavailable
+      ansible.builtin.set_fact:
+        op_installed: false
+      tags:
+        - always
+
+  tasks:
+    - name: Set roles
+      ansible.builtin.set_fact:
+        run_roles: "{{ default_roles }}"
+      tags:
+        - always
+
+    - name: Run roles
+      ansible.builtin.include_role:
+        apply:
+          tags:
+            - "{{ roles_item }}"
+        name: "{{ roles_item }}"
+      loop_control:
+        loop_var: roles_item
+      with_items: "{{ run_roles }}"
+      tags:
+        - always

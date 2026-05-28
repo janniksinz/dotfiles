@@ -61,6 +61,9 @@ git:
   editor: nvim
   signing: false
 
+# GitLab OAuth (public client ID — safe to hardcode)
+gcm_work_gitlab_client_id_public: "7947ddff92d2e3a0f062abb29f866ca57cf4acef87f0cb934e219fffed1af060"
+
 # Extra paths (Go from tarball needs /usr/local/go/bin)
 zsh_extra_paths:
   - "$HOME/.local/bin"

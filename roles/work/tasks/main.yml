@@ -43,9 +43,8 @@
     file: "{{ user_home }}/.config/git/config"
     scope: file
     value: gitlab
-  when: op_installed | default(false)
 
-- name: Configure GitLab OAuth client ID
+- name: Configure GitLab OAuth client ID (from 1Password)
   community.general.git_config:
     name: "credential.https://{{ gcm_work.git_host }}.gitLabDevClientId"
     file: "{{ user_home }}/.config/git/config"
@@ -55,13 +54,22 @@
     - op_installed | default(false)
     - work_gitlab_client_id_result.stdout | default('') | length > 0
 
+- name: Configure GitLab OAuth client ID (public fallback)
+  community.general.git_config:
+    name: "credential.https://{{ gcm_work.git_host }}.gitLabDevClientId"
+    file: "{{ user_home }}/.config/git/config"
+    scope: file
+    value: "{{ gcm_work_gitlab_client_id_public }}"
+  when:
+    - not (op_installed | default(false))
+    - gcm_work_gitlab_client_id_public is defined
+
 - name: Configure GitLab OAuth auth mode
   community.general.git_config:
     name: "credential.https://{{ gcm_work.git_host }}.gitLabAuthModes"
     file: "{{ user_home }}/.config/git/config"
     scope: file
     value: browser
-  when: op_installed | default(false)
 
 - name: Deploy work git config
   ansible.builtin.template:

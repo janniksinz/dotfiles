@@ -16,11 +16,17 @@
     version: master
     update: false
 
-- name: Enable custom plugins loading
+- name: Enable custom plugins import in kickstart
   ansible.builtin.lineinfile:
     path: "{{ user_home }}/.config/nvim/init.lua"
-    regexp: '^\s*[-]*\s*require .custom\.plugins.'
-    line: "  require 'custom.plugins'"
+    regexp: '^\s*--\s*\{ import = .custom\.plugins. \}'
+    line: "  { import = 'custom.plugins' },"
+
+- name: Ensure custom plugins directory exists
+  ansible.builtin.file:
+    path: "{{ user_home }}/.config/nvim/lua/custom/plugins"
+    state: directory
+    mode: "0755"
 
 - name: Deploy custom neovim plugins
   ansible.builtin.copy:
@@ -30,9 +36,10 @@
   loop:
     - harpoon.lua
     - codecompanion.lua
+    - undotree.lua
     - remap.lua
 
 - name: Install neovim plugins
   ansible.builtin.command:
-    cmd: nvim --headless -c 'lua vim.pack.update()' -c 'qa'
+    cmd: nvim --headless "+Lazy! sync" +qa
   changed_when: false

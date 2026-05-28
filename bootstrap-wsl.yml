@@ -88,6 +88,12 @@
         mode: "0440"
         validate: "visudo -cf %s"
 
+    # === PHASE 4: Ansible Galaxy collections ===
+    - name: Install Ansible Galaxy collections
+      ansible.builtin.command:
+        cmd: "ansible-galaxy collection install -r {{ playbook_dir }}/requirements.yml"
+      changed_when: false
+
   post_tasks:
     - name: Verify 1Password CLI
       ansible.builtin.command:

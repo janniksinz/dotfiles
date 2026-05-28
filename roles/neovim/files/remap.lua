@@ -26,3 +26,5 @@ vim.keymap.set('n', '<leader>k', '<cmd>lnext<CR>zz', { desc = 'Location list nex
 vim.keymap.set('n', '<leader>j', '<cmd>lprev<CR>zz', { desc = 'Location list prev' })
 
 vim.keymap.set('n', '<leader>x', '<cmd>!chmod +x %<CR>', { silent = true, desc = 'Make file executable' })
+
+return {}
