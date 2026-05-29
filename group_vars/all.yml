@@ -78,6 +78,7 @@ default_roles:
   - claude
 
   # === Optional (uncomment to enable) ===
+  - davinci-resolve
   # - gaming
   # - virtualization
 

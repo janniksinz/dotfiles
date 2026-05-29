@@ -1,0 +1,28 @@
+---
+davinci_resolve_version: "20.3.3"
+davinci_resolve_downloads_dir: "{{ ansible_facts.env.HOME }}/Downloads"
+davinci_resolve_install_dir: /opt/resolve
+davinci_resolve_disable_bundled_libs: true
+davinci_resolve_opt_bind_mount: false
+davinci_resolve_deps:
+  - glu
+  - libxcrypt-compat
+  - fuse2
+  - gst-plugins-bad-libs
+  - python-numpy
+  - tbb
+  - apr-util
+  - luajit
+  - "libc++"
+  - libc++abi
+  - jre-openjdk
+  - patchelf
+  - cuda
+  - ocl-icd
+  - libpng12
+  - ffmpeg4.4
+davinci_resolve_bundled_libs_remove:
+  - "libglib-*"
+  - "libgio-*"
+  - "libgmodule-*"
+  - "libgobject-*"

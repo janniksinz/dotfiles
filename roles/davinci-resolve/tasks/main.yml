@@ -1,0 +1,338 @@
+---
+# Phase 1: Idempotency check
+# - name: Check if DaVinci Resolve is already installed
+#   ansible.builtin.stat:
+#     path: "{{ davinci_resolve_install_dir }}/bin/resolve"
+#   register: davinci_installed
+#
+# - name: Skip role if DaVinci Resolve is already installed
+#   ansible.builtin.meta: end_role
+#   when: davinci_installed.stat.exists
+
+# Phase 2: Locate source ZIP
+- name: Look for DaVinci Resolve ZIP in downloads
+  ansible.builtin.find:
+    paths: "{{ davinci_resolve_downloads_dir }}"
+    patterns: "DaVinci_Resolve_*_Linux.zip"
+    file_type: file
+  register: resolve_zips
+
+- name: Set resolved ZIP path (prefer configured version, fall back to newest)
+  ansible.builtin.set_fact:
+    davinci_resolve_zip_path: >-
+      {{
+        resolve_zips.files
+        | selectattr('path', 'search', davinci_resolve_version)
+        | map(attribute='path')
+        | first
+        | default(
+            resolve_zips.files
+            | sort(attribute='mtime', reverse=true)
+            | map(attribute='path')
+            | first
+            | default('')
+          )
+      }}
+
+- name: Fail if no DaVinci Resolve ZIP found
+  ansible.builtin.fail:
+    msg: |
+      No DaVinci Resolve ZIP found in {{ davinci_resolve_downloads_dir }}!
+
+      Please download manually from:
+        https://www.blackmagicdesign.com/support/family/davinci-resolve-and-fusion
+
+      Expected filename pattern: DaVinci_Resolve_<version>_Linux.zip
+
+      Then re-run the playbook.
+  when: davinci_resolve_zip_path == ''
+
+- name: Extract version from found ZIP
+  ansible.builtin.set_fact:
+    davinci_resolve_detected_version: "{{ davinci_resolve_zip_path | basename | regex_replace('^DaVinci_Resolve_(.+)_Linux\\.zip$', '\\1') }}"
+
+- name: Display detected DaVinci Resolve version
+  ansible.builtin.debug:
+    msg: "Installing DaVinci Resolve {{ davinci_resolve_detected_version }} via direct extraction"
+
+# Phase 3: Install dependencies via yay
+- name: Install dependencies
+  kewlfft.aur.aur:
+    name: "{{ davinci_resolve_deps }}"
+    use: yay
+    state: present
+  become: "{{ ansible_facts['user_id'] == 'root' }}"
+  become_user: "{{ host_user }}"
+
+# Phase 4: Extract .run file
+- name: Create build directory
+  ansible.builtin.file:
+    path: "{{ ansible_facts.env.HOME }}/builds/davinci-resolve-extract"
+    state: directory
+    mode: "0755"
+  register: davinci_tmp_dir
+
+- name: Set build directory fact
+  ansible.builtin.set_fact:
+    davinci_tmp:
+      path: "{{ ansible_facts.env.HOME }}/builds/davinci-resolve-extract"
+
+- name: Extract ZIP to get .run file
+  ansible.builtin.unarchive:
+    src: "{{ davinci_resolve_zip_path }}"
+    dest: "{{ davinci_tmp.path }}"
+    remote_src: true
+
+- name: Find the .run file
+  ansible.builtin.find:
+    paths: "{{ davinci_tmp.path }}"
+    patterns: "DaVinci_Resolve_*_Linux.run"
+    file_type: file
+  register: resolve_run_files
+
+- name: Make .run file executable
+  ansible.builtin.file:
+    path: "{{ resolve_run_files.files[0].path }}"
+    mode: "0755"
+
+- name: Extract .run file (AppImage extract)
+  ansible.builtin.command:
+    cmd: "{{ resolve_run_files.files[0].path }} --appimage-extract"
+    chdir: "{{ davinci_tmp.path }}"
+    creates: "{{ davinci_tmp.path }}/squashfs-root"
+
+- name: Fix permissions on extracted files
+  ansible.builtin.shell:
+    cmd: chmod -R u+rwX "{{ davinci_tmp.path }}/squashfs-root"
+  changed_when: true
+
+# Phase 5: Patchelf all ELF binaries
+- name: Apply patchelf RPATH to all ELF binaries
+  ansible.builtin.shell:
+    cmd: |
+      RPATH="{{ davinci_resolve_install_dir }}/libs"
+      RPATH="${RPATH}:{{ davinci_resolve_install_dir }}/libs/Fusion"
+      RPATH="${RPATH}:{{ davinci_resolve_install_dir }}/libs/plugins/sqldrivers"
+      RPATH="${RPATH}:{{ davinci_resolve_install_dir }}/libs/plugins/xcbglintegrations"
+      RPATH="${RPATH}:{{ davinci_resolve_install_dir }}/libs/plugins/imageformats"
+      RPATH="${RPATH}:{{ davinci_resolve_install_dir }}/libs/plugins/platforms"
+      RPATH="${RPATH}:{{ davinci_resolve_install_dir }}/plugins"
+      RPATH="${RPATH}:{{ davinci_resolve_install_dir }}/bin"
+      RPATH="${RPATH}:\$ORIGIN"
+      find "{{ davinci_tmp.path }}/squashfs-root" -type f -size -32M -exec sh -c '
+        for f; do
+          if [ "$(od -An -tx1 -N4 "$f" 2>/dev/null | tr -d " ")" = "7f454c46" ]; then
+            patchelf --set-rpath "'"${RPATH}"'" "$f" 2>/dev/null || true
+          fi
+        done
+      ' _ {} +
+  changed_when: true
+
+# Phase 6: Extract control panel framework
+- name: Check if panel framework archive exists
+  ansible.builtin.stat:
+    path: "{{ davinci_tmp.path }}/squashfs-root/share/panels/dvpanel-framework-linux-x86_64.tgz"
+  register: panel_tgz
+
+- name: Extract control panel framework
+  when: panel_tgz.stat.exists
+  block:
+    - name: Extract panel framework tarball
+      ansible.builtin.unarchive:
+        src: "{{ davinci_tmp.path }}/squashfs-root/share/panels/dvpanel-framework-linux-x86_64.tgz"
+        dest: "{{ davinci_tmp.path }}/squashfs-root/share/panels"
+        remote_src: true
+
+    - name: Move panel .so files to libs
+      ansible.builtin.shell:
+        cmd: mv {{ davinci_tmp.path }}/squashfs-root/share/panels/*.so {{ davinci_tmp.path }}/squashfs-root/libs/ 2>/dev/null || true
+      changed_when: true
+
+    - name: Move panel lib directory contents to libs
+      ansible.builtin.shell:
+        cmd: cp -a {{ davinci_tmp.path }}/squashfs-root/share/panels/lib/. {{ davinci_tmp.path }}/squashfs-root/libs/ 2>/dev/null || true
+      changed_when: true
+
+# Phase 7: Remove conflicting bundled libs
+- name: Remove conflicting bundled libs and symlink system versions
+  when: davinci_resolve_disable_bundled_libs
+  block:
+    - name: Remove conflicting bundled libs
+      ansible.builtin.shell:
+        cmd: chmod u+w "{{ davinci_tmp.path }}/squashfs-root/libs" && rm -f {{ davinci_tmp.path }}/squashfs-root/libs/{{ item }}
+      loop: "{{ davinci_resolve_bundled_libs_remove }}"
+      changed_when: true
+
+    - name: Symlink system glib libs
+      ansible.builtin.file:
+        src: "/usr/lib/{{ item }}"
+        dest: "{{ davinci_tmp.path }}/squashfs-root/libs/{{ item }}"
+        state: link
+        force: true
+      loop:
+        - libglib-2.0.so.0
+        - libgio-2.0.so.0
+        - libgmodule-2.0.so.0
+        - libgdk_pixbuf-2.0.so.0
+
+# Phase 8: Remove installer cruft and install to /opt/resolve
+- name: Remove AppImage installer files
+  ansible.builtin.file:
+    path: "{{ davinci_tmp.path }}/squashfs-root/{{ item }}"
+    state: absent
+  loop:
+    - installer
+    - AppRun
+
+- name: Create install directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ davinci_resolve_install_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install DaVinci Resolve to {{ davinci_resolve_install_dir }}
+  become: true
+  ansible.builtin.shell:
+    cmd: "cp -a {{ davinci_tmp.path }}/squashfs-root/. {{ davinci_resolve_install_dir }}/"
+  changed_when: true
+
+- name: Set user ownership on install directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ davinci_resolve_install_dir }}"
+    state: directory
+    owner: "{{ host_user }}"
+    group: "{{ host_user }}"
+    recurse: true
+
+# Phase 9: Desktop integration
+- name: Install desktop entry with XWayland support
+  become: true
+  ansible.builtin.copy:
+    content: |
+      [Desktop Entry]
+      Version=1.0
+      Type=Application
+      Name=DaVinci Resolve
+      GenericName=Video Editor
+      Comment=Professional video editing, color correction, visual effects and audio post-production
+      Exec=env QT_QPA_PLATFORM=xcb {{ davinci_resolve_install_dir }}/bin/resolve %u
+      Icon=DV_Resolve
+      Terminal=false
+      MimeType=application/x-resolveproj;
+      StartupNotify=true
+      Categories=AudioVideo;Video;
+      StartupWMClass=resolve
+    dest: /usr/share/applications/com.blackmagicdesign.resolve.desktop
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Install DaVinci Resolve icon
+  become: true
+  ansible.builtin.copy:
+    src: "{{ davinci_resolve_install_dir }}/graphics/DV_Resolve.png"
+    dest: /usr/share/icons/hicolor/64x64/apps/DV_Resolve.png
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Find udev rules in extracted files
+  ansible.builtin.find:
+    paths: "{{ davinci_resolve_install_dir }}/share"
+    patterns: "*.rules"
+    file_type: file
+    recurse: true
+  register: resolve_udev_rules
+
+- name: Install udev rules
+  become: true
+  ansible.builtin.copy:
+    src: "{{ item.path }}"
+    dest: "/usr/lib/udev/rules.d/{{ item.path | basename }}"
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ resolve_udev_rules.files }}"
+  notify: Reload udev rules
+
+# Phase 10: System configuration
+- name: Create TLS cert symlink for Resolve downloads
+  become: true
+  block:
+    - name: Ensure /etc/pki directory exists
+      ansible.builtin.file:
+        path: /etc/pki
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Symlink /etc/ssl to /etc/pki/tls
+      ansible.builtin.file:
+        src: /etc/ssl
+        dest: /etc/pki/tls
+        state: link
+
+- name: Add user to video and render groups
+  become: true
+  ansible.builtin.user:
+    name: "{{ host_user }}"
+    groups:
+      - video
+      - render
+    append: true
+
+# Phase 11: Optional /opt bind mount
+- name: Handle small root partition with /opt bind mount
+  when: davinci_resolve_opt_bind_mount
+  become: true
+  block:
+    - name: Create /home/.opt directory
+      ansible.builtin.file:
+        path: /home/.opt
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Copy /opt contents to /home/.opt
+      ansible.builtin.shell:
+        cmd: cp -a /opt/. /home/.opt/
+      args:
+        creates: /home/.opt/resolve
+
+    - name: Add /opt bind mount to fstab
+      ansible.builtin.lineinfile:
+        path: /etc/fstab
+        line: "/home/.opt /opt none bind 0 0"
+        state: present
+
+    - name: Mount /opt bind mount
+      ansible.posix.mount:
+        path: /opt
+        src: /home/.opt
+        fstype: none
+        opts: bind
+        state: mounted
+
+# Phase 12: Cleanup
+- name: Remove build directory
+  ansible.builtin.shell:
+    cmd: chmod -R u+w "{{ davinci_tmp.path }}" && rm -rf "{{ davinci_tmp.path }}"
+  changed_when: true
+
+- name: Verify installation
+  ansible.builtin.stat:
+    path: "{{ davinci_resolve_install_dir }}/bin/resolve"
+  register: davinci_verify
+
+- name: Report installation result
+  ansible.builtin.debug:
+    msg: "DaVinci Resolve {{ davinci_resolve_detected_version }} installed successfully at {{ davinci_resolve_install_dir }}"
+  when: davinci_verify.stat.exists
