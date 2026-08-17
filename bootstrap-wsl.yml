@@ -17,6 +17,8 @@
     # === PHASE 1: Base development tools ===
     - name: Install base packages
       become: true
+      environment:
+        DEBIAN_FRONTEND: noninteractive
       ansible.builtin.apt:
         name:
           - build-essential
@@ -75,7 +77,32 @@
             state: present
             update_cache: true
 
-    # === PHASE 3: Sudoers configuration ===
+    # === PHASE 3: WSL configuration ===
+    - name: Detect Windows username
+      ansible.builtin.shell:
+        cmd: $env:UserName
+        executable: /mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe
+      register: windows_user
+      changed_when: false
+
+    - name: Configure /etc/wsl.conf
+      become: true
+      ansible.builtin.template:
+        src: roles/base-wsl/templates/wsl.conf.j2
+        dest: /etc/wsl.conf
+        owner: root
+        group: root
+        mode: "0644"
+      register: wsl_conf_result
+
+    - name: Configure /mnt/c/Users/{{ windows_user.stdout | trim | lower }}/.wslconfig
+      ansible.builtin.template:
+        src: roles/base-wsl/templates/wslconfig.j2
+        dest: "/mnt/c/Users/{{ windows_user.stdout | trim | lower }}/.wslconfig"
+        mode: "0644"
+      register: wslconfig_result
+
+  # === PHASE 4: Sudoers configuration ===
     - name: Configure sudoers to preserve OP credentials
       become: true
       ansible.builtin.copy:
@@ -100,6 +127,9 @@
         msg: |
           ========================================
           WSL Pre-setup complete! Next steps:
+          {% if wsl_conf_result.changed or wslconfig_result.changed %}
+          0. RESTART WSL FIRST: run 'wsl --shutdown' from Windows PowerShell, then reopen WSL
+          {% endif %}
           1. Authenticate CLI: op signin
              (or set OP_SERVICE_ACCOUNT_TOKEN)
           2. Run full setup: dotfiles
