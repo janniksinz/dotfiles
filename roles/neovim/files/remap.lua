@@ -1,36 +1,57 @@
-vim.keymap.set('n', '<leader>pv', vim.cmd.Ex, { desc = 'Open file explorer' })
+vim.keymap.set("n", "<leader>pv", vim.cmd.Ex, { desc = "Open file explorer" })
 
-vim.keymap.set('v', 'J', ":m '>+1<CR>gv=gv", { desc = 'Move selection down' })
-vim.keymap.set('v', 'K', ":m '<-2<CR>gv=gv", { desc = 'Move selection up' })
+vim.keymap.set("v", "J", ":m '>+1<CR>gv=gv", { desc = "Move selection down" })
+vim.keymap.set("v", "K", ":m '<-2<CR>gv=gv", { desc = "Move selection up" })
 
-vim.keymap.set('n', 'J', 'mzJ`z', { desc = 'Join lines, keep cursor' })
-vim.keymap.set('n', '<C-d>', '<C-d>zz', { desc = 'Half page down, center' })
-vim.keymap.set('n', '<C-u>', '<C-u>zz', { desc = 'Half page up, center' })
-vim.keymap.set('n', 'n', 'nzzzv', { desc = 'Next search, center' })
-vim.keymap.set('n', 'N', 'Nzzzv', { desc = 'Prev search, center' })
+vim.keymap.set("n", "J", "mzJ`z", { desc = "Join lines, keep cursor" })
+vim.keymap.set("n", "<C-d>", "<C-d>zz", { desc = "Half page down, center" })
+vim.keymap.set("n", "<C-u>", "<C-u>zz", { desc = "Half page up, center" })
+vim.keymap.set("n", "n", "nzzzv", { desc = "Next search, center" })
+vim.keymap.set("n", "N", "Nzzzv", { desc = "Prev search, center" })
 
-vim.keymap.set('x', '<leader>p', [["_dP]], { desc = 'Paste without yanking' })
+vim.keymap.set("x", "<leader>p", [["_dP]], { desc = "Paste without yanking" })
 
-vim.keymap.set({ 'n', 'v' }, '<leader>y', [["+y]], { desc = 'Yank to clipboard' })
-vim.keymap.set('n', '<leader>Y', [["+Y]], { desc = 'Yank line to clipboard' })
-vim.keymap.set({ 'n', 'v' }, '<leader>d', [["_d]], { desc = 'Delete to void register' })
+vim.keymap.set({ "n", "v" }, "<leader>y", [["+y]], { desc = "Yank to clipboard" })
+vim.keymap.set("n", "<leader>Y", [["+Y]], { desc = "Yank line to clipboard" })
+vim.keymap.set({ "n", "v" }, "<leader>d", [["_d]], { desc = "Delete to void register" })
 
-vim.keymap.set('i', '<C-c>', '<Esc>')
+vim.keymap.set("i", "<C-c>", "<Esc>")
 
-vim.keymap.set('n', 'Q', '<nop>')
-vim.keymap.set('n', '<C-f>', '<cmd>silent !tmux neww tmux-sessionizer<CR>', { desc = 'Tmux sessionizer' })
+vim.keymap.set("n", "Q", "<nop>")
+vim.keymap.set("n", "<C-f>", "<cmd>silent !tmux neww tmux-sessionizer<CR>", { desc = "Tmux sessionizer" })
 
-vim.keymap.set('n', '<C-k>', '<cmd>cnext<CR>zz', { desc = 'Quickfix next' })
-vim.keymap.set('n', '<C-j>', '<cmd>cprev<CR>zz', { desc = 'Quickfix prev' })
-vim.keymap.set('n', '<leader>k', '<cmd>lnext<CR>zz', { desc = 'Location list next' })
-vim.keymap.set('n', '<leader>j', '<cmd>lprev<CR>zz', { desc = 'Location list prev' })
+vim.keymap.set("n", "<C-k>", "<cmd>cnext<CR>zz", { desc = "Quickfix next" })
+vim.keymap.set("n", "<C-j>", "<cmd>cprev<CR>zz", { desc = "Quickfix prev" })
+vim.keymap.set("n", "<leader>k", "<cmd>lnext<CR>zz", { desc = "Location list next" })
+vim.keymap.set("n", "<leader>j", "<cmd>lprev<CR>zz", { desc = "Location list prev" })
 
-vim.keymap.set('n', '<leader>x', '<cmd>!chmod +x %<CR>', { silent = true, desc = 'Make file executable' })
+vim.keymap.set("n", "<leader>x", "<cmd>!chmod +x %<CR>", { silent = true, desc = "Make file executable" })
 
-vim.keymap.set('n', '<leader>ey', function()
-    local diags = vim.diagnostic.get(0, { lnum = vim.fn.line('.') - 1 })
-    if #diags == 0 then return end
-    local msg = table.concat(vim.tbl_map(function(d) return d.message end, diags), '\n')
-    vim.fn.setreg('+', msg)
-    vim.notify('Copied diagnostic', vim.log.levels.INFO)
-end, { desc = 'Copy diagnostic to clipboard' })
+vim.keymap.set("n", "<leader>ey", function()
+	local diags = vim.diagnostic.get(0, { lnum = vim.fn.line(".") - 1 })
+	if #diags == 0 then
+		return
+	end
+	local msg = table.concat(
+		vim.tbl_map(function(d)
+			return d.message
+		end, diags),
+		"\n"
+	)
+	vim.fn.setreg("+", msg)
+	vim.notify("Copied diagnostic", vim.log.levels.INFO)
+end, { desc = "Copy diagnostic to clipboard" })
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = "markdown",
+	callback = function()
+		vim.keymap.set("n", "<leader>vm", function()
+			local file = vim.fn.expand("%:p")
+			-- glow pane for terminal preview
+			vim.fn.system(string.format("tmux split-window -h \"echo '%s' | entr -c glow '%s'\"", file, file))
+			-- markdown-preview.nvim for browser (mermaid-aware)
+			vim.cmd("MarkdownPreview")
+		end, { buffer = true, desc = "Preview markdown (glow pane + grip browser)" })
+	end,
+})
+
+return {}

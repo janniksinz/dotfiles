@@ -31,6 +31,7 @@
     - harpoon.lua
     - codecompanion.lua
     - remap.lua
+    - markdown-preview.lua
 
 - name: Install neovim plugins
   ansible.builtin.command:
