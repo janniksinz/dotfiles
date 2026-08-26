@@ -3,3 +3,7 @@
   become: true
   ansible.builtin.command:
     cmd: locale-gen
+
+- name: wsl restart required
+  ansible.builtin.debug:
+    msg: "wsl.conf changed — run 'wsl --shutdown' from Windows then reopen WSL to apply"

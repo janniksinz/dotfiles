@@ -2,11 +2,10 @@
 - name: Detect Windows Current User
   ansible.builtin.shell:
     cmd: $env:UserName
+    executable: /mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe
   register: windows_user
   changed_when: false
   failed_when: windows_user.rc != 0
-  args:
-    executable: powershell.exe
 
 - name: Register Windows Current User
   ansible.builtin.set_fact:

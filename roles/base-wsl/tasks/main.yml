@@ -11,6 +11,16 @@
     name: "{{ base_wsl_packages }}"
     state: present
 
+- name: Configure /etc/wsl.conf
+  become: true
+  ansible.builtin.template:
+    src: wsl.conf.j2
+    dest: /etc/wsl.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: wsl restart required
+
 - name: Ensure locale is generated
   become: true
   ansible.builtin.command:

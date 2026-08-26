@@ -1,0 +1,18 @@
+[automount]
+enabled=true
+mountFsTab=true
+
+[network]
+hostname={{ wsl_hostname | default('loki') }}
+generateHosts=false
+generateResolvConf=false
+
+[interop]
+enabled=true
+appendWindowsPath={{ wsl_append_windows_path | default(true) | lower }}
+
+[boot]
+systemd=true
+
+[user]
+default={{ host_user }}

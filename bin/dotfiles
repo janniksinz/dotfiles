@@ -88,13 +88,8 @@ OP_AUTHENTICATED=false
 OP_VAULT_SECRET=""
 ID=""
 DOTFILES_LOG="$HOME/.dotfiles.log"
-#DOTFILES_DIR="$HOME/.dotfiles"
-# Use the original user's home directory even when run with sudo
-if [[ -n "$SUDO_USER" ]]; then
-  DOTFILES_DIR=$(eval echo ~$SUDO_USER)/.dotfiles
-else
-  DOTFILES_DIR="$HOME/.dotfiles"
-fi
+# Resolve dotfiles directory: use script's own location
+DOTFILES_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 IS_FIRST_RUN="$HOME/.dotfiles_run"
 # Spinner PID tracking
 SPINNER_PID=""

@@ -3,6 +3,53 @@
   ansible.builtin.include_tasks:
     file: "install-{{ 'debian' if ansible_os_family == 'Debian' else 'arch' }}.yml"
 
+- name: Check GCM candidates on Windows side
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop:
+    - /mnt/c/Program Files/Git/mingw64/bin/git-credential-manager.exe
+    - /mnt/c/Program Files/Git/cmd/git-credential-manager.exe
+    - /mnt/c/Program Files/Git/mingw64/libexec/git-core/git-credential-manager.exe
+  register: gcm_candidates
+  when: ansible_host_environment_is_wsl | default(false) | bool
+
+- name: Set GCM source path from first found candidate
+  ansible.builtin.set_fact:
+    gcm_wsl_source_path: "{{ item.item }}"
+  loop: "{{ gcm_candidates.results }}"
+  loop_control:
+    label: "{{ item.item | basename }}"
+  when:
+    - ansible_host_environment_is_wsl | default(false) | bool
+    - gcm_wsl_source_path is not defined
+    - item.stat.exists
+
+- name: Warn if Windows GCM not found
+  ansible.builtin.debug:
+    msg: "WARNING: Windows Git Credential Manager not found. Install Git for Windows."
+  when:
+    - ansible_host_environment_is_wsl | default(false) | bool
+    - gcm_wsl_source_path is not defined
+
+- name: Ensure ~/.local/bin exists
+  ansible.builtin.file:
+    path: "{{ user_home }}/.local/bin"
+    state: directory
+    mode: "0755"
+  when:
+    - ansible_host_environment_is_wsl | default(false) | bool
+    - gcm_wsl_source_path is defined
+
+- name: Create GCM symlink without spaces in path
+  ansible.builtin.file:
+    src: "{{ gcm_wsl_source_path }}"
+    dest: "{{ user_home }}/.local/bin/git-credential-manager"
+    state: link
+    force: true
+  when:
+    - ansible_host_environment_is_wsl | default(false) | bool
+    - gcm_wsl_source_path is defined
+
 - name: Configure GCM credential store
   community.general.git_config:
     name: credential.credentialStore
@@ -15,11 +62,18 @@
     name: credential.helper
     file: "{{ user_home }}/.config/git/config"
     scope: file
-    value: "{{ '/mnt/c/Program\\ Files/Git/mingw64/bin/git-credential-manager.exe' if ansible_host_environment_is_wsl | default(false) | bool else '/usr/bin/git-credential-manager' }}"
+    value: "{{ user_home + '/.local/bin/git-credential-manager' if ansible_host_environment_is_wsl | default(false) | bool else '/usr/bin/git-credential-manager' }}"
 
-- name: Disable GCM GUI prompts (use browser OAuth directly)
+- name: Disable GCM GUI prompts
   community.general.git_config:
     name: credential.guiPrompt
     file: "{{ user_home }}/.config/git/config"
     scope: file
     value: "false"
+
+- name: Use default web browser for auth
+  community.general.git_config:
+    name: credential.msauthUseDefaultWebBrowser
+    file: "{{ user_home }}/.config/git/config"
+    scope: file
+    value: "true"
