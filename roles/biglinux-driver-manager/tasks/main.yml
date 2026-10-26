@@ -1,0 +1,52 @@
+---
+- name: Skip on WSL
+  ansible.builtin.meta: end_role
+  when: ansible_host_environment_is_wsl | default(false) | bool
+
+- name: Check if biglinux-driver-manager repository exists locally
+  ansible.builtin.stat:
+    path: "/tmp/biglinux-driver-manager-build"
+  register: local_repo
+
+- name: Clone biglinux-driver-manager from GitHub
+  ansible.builtin.git:
+    repo: https://github.com/biglinux/biglinux-driver-manager.git
+    dest: /tmp/biglinux-driver-manager-build
+    depth: 1
+  when: not local_repo.stat.exists
+
+- name: Build biglinux-driver-manager packages
+  ansible.builtin.command:
+    cmd: makepkg -s --noconfirm
+    chdir: /tmp/biglinux-driver-manager-build/pkgbuild
+  register: build_result
+  changed_when: '"Creating package" in build_result.stdout'
+  become: false
+
+- name: Find built packages
+  ansible.builtin.find:
+    paths: /tmp/biglinux-driver-manager-build/pkgbuild
+    patterns: "*.pkg.tar.zst"
+  register: built_packages
+
+- name: Install CLI and GUI packages (ignoring missing nvidia-driver-assistant)
+  become: true
+  ansible.builtin.command:
+    cmd: >
+      pacman -U
+      {{ built_packages.files | selectattr('path', 'search', 'biglinux-driver-manager.*any.pkg.tar.zst') | map(attribute='path') | list | join(' ') }}
+      {{ built_packages.files | selectattr('path', 'search', 'big-driver-manager-cli.*any.pkg.tar.zst') | map(attribute='path') | list | join(' ') }}
+      --nodeps --noconfirm
+  when: built_packages.files | length > 0
+  changed_when: true
+  register: install_result
+
+- name: Display installation result
+  ansible.builtin.debug:
+    msg: "{{ install_result.stdout }}"
+  when: install_result.stdout is defined
+
+- name: Cleanup build directory
+  ansible.builtin.file:
+    path: /tmp/biglinux-driver-manager-build
+    state: absent
