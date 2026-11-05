@@ -109,9 +109,9 @@
 
     - name: Start gnome-keyring-daemon in Hyprland session
       ansible.builtin.lineinfile:
-        path: "{{ user_home }}/.config/hypr/modules/env.conf"
-        regexp: '^exec-once\s*=.*gnome-keyring-daemon'
-        line: "exec-once = gnome-keyring-daemon --start --components=secrets,pkcs11"
+        path: "{{ user_home }}/.config/hypr/modules/env.lua"
+        regexp: '^hl\.on\("hyprland\.start".*gnome-keyring-daemon'
+        line: 'hl.on("hyprland.start", function() hl.exec_cmd("gnome-keyring-daemon --start --components=secrets,pkcs11") end)'
         create: true
         mode: "0644"
 

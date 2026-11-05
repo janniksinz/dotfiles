@@ -57,9 +57,9 @@
 
 - name: Set cursor theme via hyprland env
   ansible.builtin.lineinfile:
-    path: "{{ user_home }}/.config/hypr/modules/env.conf"
-    regexp: '^env = XCURSOR_THEME'
-    line: "env = XCURSOR_THEME,{{ theming_cursor_theme }}"
+    path: "{{ user_home }}/.config/hypr/modules/env.lua"
+    regexp: '^hl\.env\("XCURSOR_THEME"'
+    line: 'hl.env("XCURSOR_THEME", "{{ theming_cursor_theme }}")'
     create: true
     mode: "0644"
 

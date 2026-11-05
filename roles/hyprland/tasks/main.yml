@@ -17,8 +17,8 @@
 
 - name: Deploy hyprland main config
   ansible.builtin.template:
-    src: hyprland.conf.j2
-    dest: "{{ user_home }}/.config/hypr/hyprland.conf"
+    src: hyprland.lua.j2
+    dest: "{{ user_home }}/.config/hypr/hyprland.lua"
     mode: "0644"
     backup: true
 
@@ -28,9 +28,22 @@
     dest: "{{ user_home }}/.config/hypr/modules/{{ item }}"
     mode: "0644"
   loop:
-    - layout.conf
-    - binds.conf
-    - input.conf
+    - layout.lua
+    - binds.lua
+    - input.lua
+
+# Hyprland >= 0.57 reads hyprland.lua only; drop the legacy hyprlang files.
+# env.conf is replaced by env.lua (written by the nvidia/theming roles and bootstrap).
+- name: Remove legacy hyprlang configs
+  ansible.builtin.file:
+    path: "{{ user_home }}/.config/hypr/{{ item }}"
+    state: absent
+  loop:
+    - hyprland.conf
+    - modules/env.conf
+    - modules/layout.conf
+    - modules/binds.conf
+    - modules/input.conf
 
 - name: Deploy hyprlock config
   ansible.builtin.copy:

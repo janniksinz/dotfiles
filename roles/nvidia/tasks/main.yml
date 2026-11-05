@@ -101,15 +101,15 @@
 
 - name: Deploy hyprland nvidia environment config
   ansible.builtin.blockinfile:
-    path: "{{ user_home }}/.config/hypr/modules/env.conf"
-    marker: "# {mark} ANSIBLE MANAGED BLOCK - nvidia"
+    path: "{{ user_home }}/.config/hypr/modules/env.lua"
+    marker: "-- {mark} ANSIBLE MANAGED BLOCK - nvidia"
     block: |
-      env = XCURSOR_SIZE,24
-      env = HYPRCURSOR_SIZE,24
-      env = LIBVA_DRIVER_NAME,nvidia
-      env = __GLX_VENDOR_LIBRARY_NAME,nvidia
-      env = NVD_BACKEND,direct
-      env = ELECTRON_OZONE_PLATFORM_HINT,auto
+      hl.env("XCURSOR_SIZE", "24")
+      hl.env("HYPRCURSOR_SIZE", "24")
+      hl.env("LIBVA_DRIVER_NAME", "nvidia")
+      hl.env("__GLX_VENDOR_LIBRARY_NAME", "nvidia")
+      hl.env("NVD_BACKEND", "direct")
+      hl.env("ELECTRON_OZONE_PLATFORM_HINT", "auto")
     create: true
     owner: "{{ host_user }}"
     mode: "0644"
