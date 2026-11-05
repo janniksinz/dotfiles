@@ -1,0 +1,18 @@
+---
+- name: Skip on WSL
+  ansible.builtin.meta: end_role
+  when: ansible_host_environment_is_wsl | default(false) | bool
+
+- name: Install Wireshark
+  become: true
+  community.general.pacman:
+    name: wireshark-qt
+    state: present
+
+- name: Add user to wireshark group (non-root capture via dumpcap)
+  become: true
+  ansible.builtin.user:
+    name: "{{ host_user }}"
+    groups:
+      - wireshark
+    append: true
