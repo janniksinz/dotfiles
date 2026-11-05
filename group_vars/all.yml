@@ -62,6 +62,7 @@ default_roles:
   - swayimg
   - zathura
   - tldr
+  - wireshark
 
   # === CLI Tools ===
   - btop
@@ -201,6 +202,14 @@ python:
     - black
     - ruff
     - virtualenv
+
+# --------------------------------------------------------------------
+# BRAVE
+# --------------------------------------------------------------------
+brave:
+  mtls:
+    pfx_vault_path: "op://MCB/MIC certificate 2026/mic_certificate_JANSINZ.pfx"
+    password_vault_path: "op://MCB/MIC certificate 2026/password"
 
 # --------------------------------------------------------------------
 # CLAUDE CODE

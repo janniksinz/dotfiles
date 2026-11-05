@@ -14,3 +14,57 @@
       --ozone-platform-hint=auto
     dest: "{{ user_home }}/.config/brave-flags.conf"
     mode: "0644"
+
+- name: Install nss tools for mTLS cert management
+  become: true
+  community.general.pacman:
+    name: nss
+    state: present
+
+- name: Ensure NSS db directory exists
+  ansible.builtin.file:
+    path: "{{ user_home }}/.pki/nssdb"
+    state: directory
+    mode: "0700"
+
+- name: Initialize NSS db if not present
+  ansible.builtin.command:
+    cmd: certutil -d sql:{{ user_home }}/.pki/nssdb -N --empty-password
+    creates: "{{ user_home }}/.pki/nssdb/cert9.db"
+
+- name: Download MIC client certificate from 1Password
+  ansible.builtin.command:
+    cmd: "op read '{{ brave.mtls.pfx_vault_path }}' --force --out-file {{ user_home }}/.pki/mic_certificate.pfx"
+  changed_when: true
+  failed_when: false
+  check_mode: false
+  no_log: true
+  when: op_installed | default(false)
+
+- name: Get MIC certificate password from 1Password
+  ansible.builtin.command:
+    cmd: "op read '{{ brave.mtls.password_vault_path }}'"
+  register: mic_cert_password
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  no_log: true
+  when: op_installed | default(false)
+
+- name: Import MIC client certificate into NSS db
+  ansible.builtin.command:
+    cmd: >
+      pk12util -d sql:{{ user_home }}/.pki/nssdb
+      -i {{ user_home }}/.pki/mic_certificate.pfx
+      -W "{{ mic_cert_password.stdout }}"
+  changed_when: true
+  failed_when: false
+  no_log: true
+  when:
+    - op_installed | default(false)
+    - mic_cert_password.stdout | default('') | length > 0
+
+- name: Remove pfx file after import
+  ansible.builtin.file:
+    path: "{{ user_home }}/.pki/mic_certificate.pfx"
+    state: absent
